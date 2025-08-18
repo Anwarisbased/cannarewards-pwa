@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import axios from 'axios';
+import Link from 'next/link'; // Import the Link component
 import { useAuth } from '../context/AuthContext';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
@@ -20,22 +21,17 @@ export default function LoginForm({ onSwitchToRegister }) {
     setError('');
 
     try {
-      // Call our custom, reliable /login proxy endpoint
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/login`,
         {
-          // Send the data as a JSON object
           email: email,
           password: password,
         },
         {
-          // Explicitly set the content type header to application/json
           headers: { 'Content-Type': 'application/json' }
         }
       );
       
-      // The proxy endpoint passes the token through in the 'token' property
-      // Our global login function handles the rest (saving token, fetching user, redirecting)
       login(response.data.token);
 
     } catch (err) {
@@ -66,6 +62,7 @@ export default function LoginForm({ onSwitchToRegister }) {
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
         />
       </div>
+
       <div className="relative">
         <label htmlFor="password-login" className="block text-sm font-medium text-gray-700 sr-only">
           Password
@@ -87,6 +84,15 @@ export default function LoginForm({ onSwitchToRegister }) {
             {passwordVisible ? <EyeSlashIcon className="h-5 w-5 text-gray-400" /> : <EyeIcon className="h-5 w-5 text-gray-400" />}
         </div>
       </div>
+
+      {/* --- THIS IS THE NEW "FORGOT PASSWORD" LINK --- */}
+      <div className="text-right text-sm">
+        <Link href="/forgot-password" className="font-medium text-primary hover:opacity-90 underline">
+          Forgot Password?
+        </Link>
+      </div>
+      {/* --- END OF NEW LINK --- */}
+
       <button 
         type="submit" 
         className="w-full py-2 px-4 bg-primary hover:opacity-90 text-white font-semibold rounded-lg disabled:bg-gray-400"
