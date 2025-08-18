@@ -3,17 +3,14 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 export default function LoginForm({ onSwitchToRegister }) {
-  // --- DIAGNOSTIC LINE ---
-  // We are logging the value of the environment variable to the browser console.
-  console.log("DIAGNOSTIC - API URL from ENV:", process.env.NEXT_PUBLIC_API_URL);
-  // --- END DIAGNOSTIC LINE ---
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   const { login } = useAuth();
 
@@ -22,23 +19,28 @@ export default function LoginForm({ onSwitchToRegister }) {
     setLoading(true);
     setError('');
 
-    const formData = new FormData();
-    formData.append('username', email);
-    formData.append('password', password);
-
     try {
-      // Using the template literal to build the URL from the environment variable
+      // Call our custom, reliable /login proxy endpoint
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/wp-json/jwt-auth/v1/token`,
-        formData
+        `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/login`,
+        {
+          // Send the data as a JSON object
+          email: email,
+          password: password,
+        },
+        {
+          // Explicitly set the content type header to application/json
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
       
+      // The proxy endpoint passes the token through in the 'token' property
+      // Our global login function handles the rest (saving token, fetching user, redirecting)
       login(response.data.token);
 
     } catch (err) {
       setError('Login failed. Please check your username and password.');
-      console.error('Login Failed:', err);
-    } finally {
+      console.error('Login Failed:', err.response?.data || err.message);
       setLoading(false);
     }
   };
@@ -64,24 +66,30 @@ export default function LoginForm({ onSwitchToRegister }) {
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
         />
       </div>
-      <div>
+      <div className="relative">
         <label htmlFor="password-login" className="block text-sm font-medium text-gray-700 sr-only">
           Password
         </label>
         <input
-          type="password"
+          type={passwordVisible ? 'text' : 'password'}
           id="password-login"
           placeholder="Password"
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm pr-10"
         />
+        <div 
+            className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+            onClick={() => setPasswordVisible(!passwordVisible)}
+        >
+            {passwordVisible ? <EyeSlashIcon className="h-5 w-5 text-gray-400" /> : <EyeIcon className="h-5 w-5 text-gray-400" />}
+        </div>
       </div>
       <button 
         type="submit" 
-        className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg disabled:bg-blue-300"
+        className="w-full py-2 px-4 bg-primary hover:opacity-90 text-white font-semibold rounded-lg disabled:bg-gray-400"
         disabled={loading}
       >
         {loading ? 'Logging in...' : 'Log In'}
@@ -92,7 +100,7 @@ export default function LoginForm({ onSwitchToRegister }) {
         <button 
           type="button" 
           onClick={onSwitchToRegister} 
-          className="font-medium text-blue-600 hover:text-blue-500 underline"
+          className="font-medium text-primary hover:opacity-90 underline"
         >
           Sign Up
         </button>

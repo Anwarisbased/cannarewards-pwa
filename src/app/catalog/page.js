@@ -1,4 +1,3 @@
-// src/app/catalog/page.js
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -9,13 +8,13 @@ import axios from 'axios';
 import AnimatedPage from '../../components/AnimatedPage';
 import { ChevronLeftIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
-// New ProductCard component to match the design
+// Reusable component for a single Product Card in the grid
 function ProductCard({ product }) {
     const imageUrl = product.images && product.images[0] ? product.images[0].src : 'https://via.placeholder.com/150';
 
     return (
-        <Link href={`/catalog/${product.id}`}>
-            <div className="bg-gray-100 rounded-lg group">
+        <Link href={`/catalog/${product.id}`} className="block group">
+            <div className="bg-gray-100 rounded-lg">
                 <div className="relative">
                     <img src={imageUrl} alt={product.name} className="w-full h-48 object-cover rounded-t-lg" />
                     <div className="absolute bottom-2 right-2 bg-black text-white w-10 h-10 rounded-full flex items-center justify-center transform group-hover:scale-110 transition-transform">
@@ -32,6 +31,7 @@ function ProductCard({ product }) {
 }
 
 export default function CatalogPage() {
+    const { isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
     const [allProducts, setAllProducts] = useState([]);
     const [filteredProducts, setFilteredProducts] = useState([]);
@@ -40,45 +40,46 @@ export default function CatalogPage() {
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const consumerKey = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY;
-                const consumerSecret = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET;
+        // Redirect if user is not logged in
+        if (!authLoading && !isAuthenticated) {
+            router.push('/');
+            return;
+        }
 
-                if (!consumerKey || !consumerSecret) {
-                    setError("API credentials are not configured. Please check your .env.local file.");
+        if (isAuthenticated) {
+            const fetchProducts = async () => {
+                try {
+                    const consumerKey = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY;
+                    const consumerSecret = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET;
+                    // Construct the API URL using template literals (backticks)
+                    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/wc/v3/products?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`;
+
+                    const response = await axios.get(apiUrl);
+                    
+                    const formattedProducts = response.data.map(p => {
+                        const pointsMeta = p.meta_data.find(meta => meta.key === 'points_cost');
+                        return { 
+                            id: p.id, 
+                            name: p.name, 
+                            images: p.images, 
+                            points_cost: pointsMeta ? parseInt(pointsMeta.value) : null 
+                        };
+                    }).filter(p => p.points_cost !== null); // Only include products with a point cost
+
+                    setAllProducts(formattedProducts);
+                    setFilteredProducts(formattedProducts);
+                } catch (err) {
+                    console.error("Failed to fetch products:", err);
+                    setError('Could not load rewards. Please try again later.');
+                } finally {
                     setLoading(false);
-                    return;
                 }
-
-                const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/wc/v3/products?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`;
-                console.log('Fetching from URL:', apiUrl);
-                const response = await axios.get(apiUrl);
-                console.log('API Response:', response.data);
-                
-                const formattedProducts = response.data.map(p => {
-                    const pointsMeta = p.meta_data.find(meta => meta.key === 'points_cost');
-                    return { id: p.id, name: p.name, images: p.images, points_cost: pointsMeta ? parseInt(pointsMeta.value) : null };
-                }).filter(p => p.points_cost !== null);
-
-                console.log('Formatted Products:', formattedProducts);
-                setAllProducts(formattedProducts);
-                setFilteredProducts(formattedProducts);
-            } catch (err) {
-                console.error('Error fetching products:', err);
-                if (err.response && err.response.status === 401) {
-                    setError('Authentication failed. Please verify your API keys in the .env.local file.');
-                } else {
-                    setError('Could not load rewards.');
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProducts();
-    }, []);
+            };
+            fetchProducts();
+        }
+    }, [isAuthenticated, authLoading, router]);
     
-    // Effect for handling the search functionality
+    // This effect runs whenever the search term changes, filtering the products
     useEffect(() => {
         if (searchTerm === '') {
             setFilteredProducts(allProducts);
@@ -90,17 +91,21 @@ export default function CatalogPage() {
         }
     }, [searchTerm, allProducts]);
 
-    if (loading) return <div className="min-h-screen bg-white text-center p-10">Loading...</div>;
+    if (authLoading || loading) {
+        return <div className="min-h-screen bg-white text-center p-10">Loading Catalog...</div>;
+    }
 
     return (
         <AnimatedPage>
             <main className="p-4 bg-white min-h-screen">
                 <div className="w-full max-w-md mx-auto">
-                    <header className="flex items-center mb-4">
+                    <header className="flex items-center mb-4 h-16">
                         <Link href="/" className="p-2 -ml-2">
                             <ChevronLeftIcon className="h-6 w-6" />
                         </Link>
                         <h1 className="text-xl font-semibold text-center flex-grow">SHOP</h1>
+                        {/* Empty div for spacing to keep title centered */}
+                        <div className="w-6 h-6"></div>
                     </header>
 
                     {/* Search Bar */}
@@ -108,7 +113,7 @@ export default function CatalogPage() {
                         <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                         <input 
                             type="text"
-                            placeholder="Search"
+                            placeholder="Search for rewards"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-gray-100 border-none rounded-lg py-3 pl-10 pr-10" 
@@ -123,6 +128,12 @@ export default function CatalogPage() {
                     
                     {error && <p className="text-red-500 text-center">{error}</p>}
                     
+                    {!error && filteredProducts.length === 0 && (
+                        <p className="text-center text-gray-500 mt-8">
+                            {searchTerm ? `No rewards found for "${searchTerm}"` : "No rewards available yet."}
+                        </p>
+                    )}
+
                     <div className="grid grid-cols-2 gap-4">
                         {filteredProducts.map(product => (
                             <ProductCard key={product.id} product={product} />

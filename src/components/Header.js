@@ -1,28 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '../context/AuthContext';
-// Import the new icons from Heroicons
-import { UserIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
 import { usePathname } from 'next/navigation';
-
-// Placeholder for your brand logo component or image
-function BrandLogo() {
-    return (
-        // TODO: Replace this div with an <Image> component from Next.js with your actual logo
-        <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-xs text-gray-500">
-            LOGO
-        </div>
-    );
-}
+import { UserIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
 
 export default function Header() {
-    const { isAuthenticated } = useAuth();
+    const { user, isAuthenticated } = useAuth();
     const pathname = usePathname();
 
-    // Do not show the header on pages that have their own custom header, like the Profile page.
-    // Add any other paths here as needed.
-    const pagesWithoutHeader = ['/profile', '/profile/edit'];
+    // Define pages where the main header should not be displayed
+    const pagesWithoutHeader = ['/profile', '/profile/edit', '/support', '/terms', '/how-to-earn', '/ranks']; // Added ranks/how-to-earn
     if (!isAuthenticated || pagesWithoutHeader.includes(pathname)) {
         return null;
     }
@@ -30,19 +19,28 @@ export default function Header() {
     return (
         <header className="fixed top-0 left-0 right-0 bg-white shadow-sm z-10">
             <div className="flex justify-between items-center max-w-md mx-auto p-4 h-20">
+                {/* Profile Icon Link - now points to the main profile menu */}
                 <Link href="/profile" className="p-2 rounded-full hover:bg-gray-100 transition-colors">
-                    {/* Replaced FiUser with UserIcon */}
-                    <UserIcon className="h-6 w-6 text-gray-700" />
+                    <UserIcon className="h-7 w-7 text-gray-700" />
                 </Link>
 
+                {/* Brand Logo Link - points to the main dashboard */}
                 <Link href="/">
-                    <BrandLogo />
+                    <Image
+                        src="/logo.png" // Assumes your logo is named logo.png in the /public folder
+                        alt="Brand Logo"
+                        width={40}
+                        height={40}
+                        priority={true} // Prioritize loading the logo as it's above the fold
+                        className="object-contain"
+                    />
                 </Link>
                 
-                <button className="p-2 rounded-full hover:bg-gray-100 transition-colors">
-                    {/* Replaced FiShoppingCart with ShoppingCartIcon */}
-                    <ShoppingCartIcon className="h-6 w-6 text-gray-700" />
-                </button>
+                {/* Points & Cart Icon Link - points to the orders page */}
+                <Link href="/orders" className="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <span className="font-bold text-gray-700 text-sm">{user?.points || 0}</span>
+                    <ShoppingCartIcon className="h-7 w-7 text-gray-700" />
+                </Link>
             </div>
         </header>
     );

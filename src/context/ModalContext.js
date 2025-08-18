@@ -2,7 +2,7 @@
 
 import { createContext, useState, useContext } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import ScanModal from '../components/ScanModal'; // Note the relative path
+import ScanModal from '../components/ScanModal.js'; // Note the relative path
 
 const ModalContext = createContext();
 
