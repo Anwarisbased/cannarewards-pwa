@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { useTransitionDirection } from '../../../context/TransitionContext'; // Import the hook
+import { useTransitionDirection } from '../../../context/TransitionContext';
 import AnimatedPage from '../../../components/AnimatedPage';
 import ShippingFormModal from '../../../components/ShippingFormModal';
+import ProductDetailSkeleton from '../../../components/ProductDetailSkeleton'; // 1. Import skeleton
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '../../../utils/axiosConfig';
@@ -15,7 +16,7 @@ export default function ProductDetailPage() {
     const { user, login, isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
     const params = useParams();
-    const { setDirection } = useTransitionDirection(); // Get the function
+    const { setDirection } = useTransitionDirection();
     const productId = params ? params.productId : null;
 
     const [product, setProduct] = useState(null);
@@ -84,9 +85,11 @@ export default function ProductDetailPage() {
         }
     };
 
+    // 2. --- RENDER THE SKELETON ---
     if (authLoading || loading || !productId) {
-        return <div className="min-h-screen bg-white text-center p-10">Loading Product...</div>;
+        return <ProductDetailSkeleton />;
     }
+
     if (error) {
         return <div className="min-h-screen bg-white text-center p-10">{error}</div>;
     }

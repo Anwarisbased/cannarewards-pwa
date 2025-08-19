@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { useModal } from '../context/ModalContext';
-import { useTransitionDirection } from '../context/TransitionContext'; // 1. Import the context hook
+// We no longer need useModal here
+import { useTransitionDirection } from '../context/TransitionContext';
 import { motion } from 'framer-motion';
 import { 
     HomeIcon as HomeOutline, 
@@ -21,13 +21,13 @@ import {
 
 function NavItem({ href, label, IconOutline, IconSolid }) {
     const pathname = usePathname();
-    const { setDirection } = useTransitionDirection(); // 2. Get the setDirection function
-    const isActive = pathname === href;
+    const { setDirection } = useTransitionDirection();
+    // More robust check for active state, includes child routes
+    const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
     const Icon = isActive ? IconSolid : IconOutline;
     const textStyle = isActive ? 'text-primary font-semibold' : 'text-gray-500';
 
     return (
-        // 3. Add an onClick handler to the Link to set the direction
         <Link 
             href={href} 
             onClick={() => setDirection('right')}
@@ -41,17 +41,6 @@ function NavItem({ href, label, IconOutline, IconSolid }) {
     );
 }
 
-function ScanButton({ label, IconOutline }) {
-    const { openScanModal } = useModal();
-    return (
-        <button onClick={openScanModal} className="flex-1 flex flex-col items-center justify-center p-2 text-gray-500 hover:bg-gray-100 transition-colors">
-            <motion.div whileTap={{ scale: 0.9 }} className="text-center">
-                <IconOutline className="h-6 w-6 mb-1 mx-auto" />
-                <span className="text-xs">{label}</span>
-            </motion.div>
-        </button>
-    );
-}
 
 export default function NavBar() {
     const { isAuthenticated } = useAuth();
@@ -64,7 +53,9 @@ export default function NavBar() {
             <div className="flex justify-around max-w-md mx-auto h-16">
                 <NavItem href="/" label="Home" IconOutline={HomeOutline} IconSolid={HomeSolid} />
                 <NavItem href="/catalog" label="Catalog" IconOutline={CatalogOutline} IconSolid={CatalogSolid} />
-                <ScanButton label="Scan" IconOutline={ScanOutline} />
+                {/* --- THIS IS THE CHANGE --- */}
+                {/* The Scan button is now a standard NavItem linking to the /scan page */}
+                <NavItem href="/scan" label="Scan" IconOutline={ScanOutline} IconSolid={ScanSolid} />
                 <NavItem href="/my-points" label="My Points" IconOutline={RewardsOutline} IconSolid={RewardsSolid} />
             </div>
         </nav>

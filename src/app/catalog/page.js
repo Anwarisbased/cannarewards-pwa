@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import api from '../../utils/axiosConfig'; // Use our new axios instance
+import api from '../../utils/axiosConfig';
 import AnimatedPage from '../../components/AnimatedPage';
 import CatalogSkeleton from '../../components/CatalogSkeleton';
 import DynamicHeader from '../../components/DynamicHeader';
+import ImageWithLoader from '../../components/ImageWithLoader'; // 1. Import the new component
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 function ProductCard({ product }) {
@@ -17,7 +18,8 @@ function ProductCard({ product }) {
         <Link href={`/catalog/${product.id}`} className="block group">
             <div className="space-y-2">
                 <div className="relative w-full aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                    <img 
+                    {/* 2. Use the ImageWithLoader component */}
+                    <ImageWithLoader 
                         src={imageUrl} 
                         alt={product.name} 
                         className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
@@ -57,7 +59,7 @@ export default function CatalogPage() {
                     const consumerSecret = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET;
                     const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/wc/v3/products?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`;
 
-                    const response = await api.get(apiUrl); // Use api instance
+                    const response = await api.get(apiUrl);
                     
                     const formattedProducts = response.data.map(p => {
                         const pointsMeta = p.meta_data.find(meta => meta.key === 'points_cost');

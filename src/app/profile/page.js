@@ -21,14 +21,12 @@ export default function ProfilePage() {
         return <div className="flex items-center justify-center min-h-screen">Loading Profile...</div>;
     }
 
-    // Get the user's first initial, defaulting to 'U' for User if no name is set.
     const userInitial = user.firstName ? user.firstName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : 'U');
 
     return (
         <AnimatedPage>
             <main className="p-4 bg-white min-h-screen">
                 <div className="w-full max-w-md mx-auto">
-                    {/* --- 1. NEW PROFILE HEADER --- */}
                     <div className="flex flex-col items-center p-4 mb-6 text-center">
                         <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center text-4xl font-bold text-gray-700 mb-4 border">
                             {userInitial}
@@ -36,8 +34,6 @@ export default function ProfilePage() {
                         <h1 className="text-2xl font-bold capitalize text-gray-900">{user.firstName || 'User'} {user.lastName || ''}</h1>
                         <p className="text-base text-gray-500">{user.email}</p>
                     </div>
-                    {/* --- END OF NEW HEADER --- */}
-
 
                     {/* Menu List */}
                     <div className="rounded-lg shadow-sm overflow-hidden mb-4 border border-gray-200">
@@ -47,6 +43,8 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="rounded-lg shadow-sm overflow-hidden mb-4 border border-gray-200">
+                        {/* --- 1. ADDED SETTINGS LINK --- */}
+                        <MenuItem href="/settings" label="Settings" />
                         <MenuItem href="/terms" label="Terms and Conditions" />
                         <MenuItem href="/support" label="Support" />
                     </div>

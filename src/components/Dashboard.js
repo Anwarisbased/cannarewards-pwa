@@ -7,36 +7,66 @@ import { motion } from 'framer-motion';
 export default function Dashboard() {
   const { user } = useAuth();
 
+  // Show a loading/fallback state if the user object isn't available yet
   if (!user) {
-    // Or return a DashboardSkeleton component
-    return null;
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-black">
+            {/* You could replace this with a more branded loading spinner later */}
+            <p className="text-white">Loading...</p>
+        </div>
+    );
   }
 
   return (
     <motion.div 
-      className="w-full max-w-md mx-auto p-4 font-sans text-center"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      className="relative flex flex-col justify-between min-h-screen w-full text-white p-8"
+      // Apply the background image using inline styles
+      style={{ 
+        backgroundImage: `url(/dashboard-bg.jpg)`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1, ease: 'easeOut' }}
     >
-      <h1 className="text-3xl font-bold mb-2">Welcome Back,</h1>
-      <h2 className="text-4xl font-bold capitalize text-primary mb-8">{user.firstName || 'Member'}!</h2>
-      
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h3 className="text-xl font-semibold mb-4">Quick Actions</h3>
-        <div className="space-y-4">
-          <Link href="/catalog" className="block">
-            <button className="w-full bg-primary hover:opacity-90 text-white font-bold py-3 px-6 rounded-lg transition-opacity">
-              Browse Rewards
-            </button>
-          </Link>
-          <Link href="/scan" className="block">
-            <button className="w-full bg-gray-800 hover:bg-black text-white font-bold py-3 px-6 rounded-lg transition-colors">
-              Scan a New Product
-            </button>
-          </Link>
-        </div>
+      {/* 1. Dark Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent z-0"></div>
+
+      {/* 2. Main Content Wrapper - using z-10 to be above the overlay */}
+      <div className="relative z-10 flex flex-col items-center justify-center text-center flex-grow">
+        <motion.h1 
+          className="text-2xl font-light mb-2 tracking-wide"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
+          Welcome Back,
+        </motion.h1>
+        <motion.h2 
+          className="text-5xl font-bold capitalize"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
+          {user.firstName || 'Member'}
+        </motion.h2>
       </div>
+
+      {/* 3. Call-to-Action Button Wrapper - also needs z-10 */}
+      <motion.div 
+        className="relative z-10 w-full"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.6 }}
+      >
+        <Link href="/catalog" className="block">
+          <button className="w-full bg-white text-black font-bold py-4 px-6 rounded-lg text-lg transform hover:scale-105 transition-transform">
+            Shop Now
+          </button>
+        </Link>
+      </motion.div>
     </motion.div>
   );
 }

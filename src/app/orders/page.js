@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import api from '../../utils/axiosConfig'; // Use our new axios instance
+import api from '../../utils/axiosConfig';
 import AnimatedPage from '../../components/AnimatedPage';
 import EmptyState from '../../components/EmptyState';
 import DynamicHeader from '../../components/DynamicHeader';
@@ -34,20 +34,44 @@ const itemVariants = {
   }
 };
 
+// --- 1. DEFINE OUR TABS AND STATUS MAPPING ---
+const TABS = {
+    ONGOING: 'Ongoing',
+    COMPLETED: 'Completed',
+    CANCELLED: 'Cancelled',
+};
+
+const STATUS_MAP = {
+    [TABS.ONGOING]: ['Processing'],
+    [TABS.COMPLETED]: ['Completed'],
+    [TABS.CANCELLED]: ['Cancelled', 'Failed', 'Refunded'],
+};
+
+
 export default function OrdersPage() {
     const { isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
-    const [orders, setOrders] = useState([]);
+    const [allOrders, setAllOrders] = useState([]);
+    const [filteredOrders, setFilteredOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState(TABS.ONGOING); // 2. Add state for active tab
 
     const fetchOrders = useCallback(async () => {
         try {
             const response = await api.get(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/my-orders`);
-            setOrders(response.data);
+            setAllOrders(response.data);
         } catch (err) {
             console.error("Failed to fetch orders:", err);
         }
     }, []);
+
+    // 3. New effect to filter orders whenever the activeTab or allOrders change
+    useEffect(() => {
+        const statusesToShow = STATUS_MAP[activeTab];
+        const filtered = allOrders.filter(order => statusesToShow.includes(order.status));
+        setFilteredOrders(filtered);
+    }, [activeTab, allOrders]);
+
 
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
@@ -76,14 +100,34 @@ export default function OrdersPage() {
                     <div className="w-full max-w-md mx-auto">
                         <DynamicHeader title="My Orders" />
 
-                        {orders.length > 0 ? (
+                        {/* --- 4. TABS UI --- */}
+                        <div className="flex justify-between items-center bg-gray-100 rounded-lg p-1 mb-6">
+                            {Object.values(TABS).map(tabName => (
+                                <button
+                                    key={tabName}
+                                    onClick={() => setActiveTab(tabName)}
+                                    className={`w-full py-2 text-sm font-semibold rounded-md transition-colors ${
+                                        activeTab === tabName
+                                            ? 'bg-white text-gray-800 shadow'
+                                            : 'bg-transparent text-gray-500 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    {tabName}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* --- 5. RENDER FILTERED ORDERS --- */}
+                        {filteredOrders.length > 0 ? (
                              <motion.div 
                                 className="space-y-4"
                                 variants={containerVariants}
                                 initial="hidden"
                                 animate="visible"
+                                // Add a key to force re-animation when the tab changes
+                                key={activeTab} 
                              >
-                                {orders.map(order => (
+                                {filteredOrders.map(order => (
                                     <motion.div 
                                         key={order.orderId} 
                                         className="bg-white p-4 rounded-lg shadow border border-gray-100"
@@ -103,8 +147,8 @@ export default function OrdersPage() {
                         ) : (
                              <EmptyState 
                                 Icon={ShoppingCartIcon}
-                                title="No Orders Yet"
-                                message="Redeem a reward from the catalog to see your order history here."
+                                title={`No ${activeTab.toLowerCase()} orders`}
+                                message="Your orders will appear here once their status changes."
                             />
                         )}
                     </div>

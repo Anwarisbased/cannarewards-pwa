@@ -40,12 +40,38 @@ export default function MyPointsPage() {
         return null;
     }
 
+    // --- 1. LOGIC TO CALCULATE NEXT RANK PROGRESS ---
+    const sortedRanks = user.allRanks 
+        ? Object.values(user.allRanks).sort((a, b) => a.points - b.points)
+        : [];
+    
+    let nextRank = null;
+    let currentRankPoints = 0;
+
+    for (const rank of sortedRanks) {
+        if (user.lifetimePoints < rank.points) {
+            nextRank = rank;
+            break;
+        }
+        currentRankPoints = rank.points;
+    }
+
+    let progressPercentage = 0;
+    let pointsNeeded = 0;
+    if (nextRank) {
+        const pointsInCurrentTier = user.lifetimePoints - currentRankPoints;
+        const pointsForNextTier = nextRank.points - currentRankPoints;
+        progressPercentage = (pointsInCurrentTier / pointsForNextTier) * 100;
+        pointsNeeded = nextRank.points - user.lifetimePoints;
+    }
+    // --- END OF LOGIC ---
+
+
     return (
         <AnimatedPage>
             <PullToRefresh onRefresh={handleRefresh}>
                 <main className="p-4 bg-white min-h-screen">
                     <div className="w-full max-w-md mx-auto">
-                        {/* --- 1. CORRECTED WHITE MEMBER CARD --- */}
                         <motion.div
                             className="bg-white rounded-xl shadow-md p-6 mb-6 border border-gray-200"
                             initial={{ scale: 0.95, opacity: 0 }}
@@ -61,6 +87,26 @@ export default function MyPointsPage() {
                                 </div>
                             </div>
                         </motion.div>
+
+                        {/* --- 2. RENDER THE PROGRESS BAR UI --- */}
+                        {nextRank ? (
+                            <div className="border border-gray-200 rounded-lg p-4 text-center mb-6">
+                                <p className="text-sm text-gray-600 mb-2">
+                                    You are <span className="font-bold text-primary">{pointsNeeded.toLocaleString()}</span> points away from {nextRank.name}!
+                                </p>
+                                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div 
+                                        className="bg-primary h-2.5 rounded-full transition-all duration-500" 
+                                        style={{ width: `${progressPercentage}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="border border-gray-200 rounded-lg p-4 text-center mb-6">
+                                <p className="font-bold text-primary">🎉 You've reached the highest rank!</p>
+                            </div>
+                        )}
+
 
                         {/* Referrals Banner */}
                         <div className="border border-gray-200 rounded-lg p-3 text-center mb-6">

@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import Image from 'next/image'; // 1. Import the Image component
 import LoginForm from '../components/LoginForm';
 import Dashboard from '../components/Dashboard';
 import RegisterForm from '../components/RegisterForm';
-import DashboardSkeleton from '../components/DashboardSkeleton'; // Import the new skeleton component
+import DashboardSkeleton from '../components/DashboardSkeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Define the animation for our forms
 const formVariants = {
   hidden: {
     opacity: 0,
@@ -36,8 +36,6 @@ export default function HomePage() {
   const { isAuthenticated, loading } = useAuth();
   const [showLogin, setShowLogin] = useState(true);
 
-  // If the app is in the initial loading state, show the skeleton.
-  // This happens on the first page load while the AuthContext checks for a token.
   if (loading) {
     return (
         <main className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -48,35 +46,44 @@ export default function HomePage() {
 
   // This variable holds the content for unauthenticated users (login/register forms)
   const authContent = (
-    <div className="text-center w-full max-w-sm">
-      <motion.h1 
-        className="text-4xl font-bold mb-8"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+    // 2. Main container for the auth screen
+    <div className="text-center w-full max-w-sm px-4">
+      {/* 3. Brand Logo */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
       >
-        CannaRewards
-      </motion.h1>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={showLogin ? 'login' : 'register'}
-          variants={formVariants}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-        >
-          {showLogin ? (
-            <LoginForm onSwitchToRegister={() => setShowLogin(false)} />
-          ) : (
-            <RegisterForm onSwitchToLogin={() => setShowLogin(true)} />
-          )}
-        </motion.div>
-      </AnimatePresence>
+        <Image
+          src="/logo.png" // Assumes your logo is in /public/logo.png
+          alt="CannaRewards Logo"
+          width={80}
+          height={80}
+          className="mx-auto mb-8"
+        />
+      </motion.div>
+      
+      {/* 4. White card container for the forms */}
+      <div className="bg-white p-8 rounded-lg shadow-md">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={showLogin ? 'login' : 'register'}
+            variants={formVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            {showLogin ? (
+              <LoginForm onSwitchToRegister={() => setShowLogin(false)} />
+            ) : (
+              <RegisterForm onSwitchToLogin={() => setShowLogin(true)} />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 
-  // The main return decides whether to show the authenticated content (Dashboard)
-  // or the unauthenticated content (authContent).
   return (
     <main className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
       {isAuthenticated ? <Dashboard /> : authContent}

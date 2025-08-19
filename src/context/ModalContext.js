@@ -1,19 +1,16 @@
 'use client';
 
-import { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import ScanModal from '../components/ScanModal.js';
 import WelcomeModal from '../components/WelcomeModal.js';
+import ConfettiBlast from '../components/ConfettiBlast.js';
 
 const ModalContext = createContext();
 
 export function ModalProvider({ children }) {
-    const [isScanModalOpen, setScanModalOpen] = useState(false);
     const [welcomeBonusDetails, setWelcomeBonusDetails] = useState(null);
+    const [showConfetti, setShowConfetti] = useState(false);
 
-    const openScanModal = () => setScanModalOpen(true);
-    const closeScanModal = () => setScanModalOpen(false);
-    
     const openWelcomeModal = (bonusDetails) => {
         setWelcomeBonusDetails(bonusDetails);
     };
@@ -21,18 +18,22 @@ export function ModalProvider({ children }) {
         setWelcomeBonusDetails(null);
     };
 
+    const triggerConfetti = () => {
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 4000); 
+    };
+
     const value = {
-        openScanModal,
-        closeScanModal,
         openWelcomeModal,
-        closeWelcomeModal
+        closeWelcomeModal,
+        triggerConfetti
     };
 
     return (
         <ModalContext.Provider value={value}>
             {children}
+            {showConfetti && <ConfettiBlast />}
             <AnimatePresence>
-                {isScanModalOpen && <ScanModal closeModal={closeScanModal} />}
                 {welcomeBonusDetails && (
                     <WelcomeModal 
                         bonusDetails={welcomeBonusDetails} 

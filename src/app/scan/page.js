@@ -1,108 +1,114 @@
 'use client';
 
-import { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '../../context/AuthContext';
+import { useModal } from '../../context/ModalContext'; // We still need this for the WelcomeModal
+import { Html5QrcodeScanner } from 'html5-qrcode';
+import api from '../../utils/axiosConfig';
 import AnimatedPage from '../../components/AnimatedPage';
-import { useModal } from '../../context/ModalContext'; // Use the new Modal Context
-// Import the new icons from Heroicons
-import { QrCodeIcon, StarIcon, BanknotesIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import DynamicHeader from '../../components/DynamicHeader';
+import { ArrowPathIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
+import { triggerHapticFeedback } from '@/utils/haptics';
 
-// A reusable component for each step in the guide
-function ScanStep({ number, Icon, title, description }) {
-    return (
-        <div className="flex flex-col items-center text-center">
-            <div className="flex items-center justify-center mb-4">
-                <span className="text-6xl font-thin text-gray-300 mr-4">{number}</span>
-                <Icon className="h-12 w-12 text-gray-800" />
-            </div>
-            <h3 className="text-xl font-semibold">{title}</h3>
-            <p className="text-gray-500 text-sm max-w-xs">{description}</p>
-        </div>
-    );
-}
+function ScanProcessor() {
+    const { login } = useAuth();
+    const router = useRouter();
+    const { openWelcomeModal, triggerConfetti } = useModal();
+    const [status, setStatus] = useState('initializing'); // initializing | scanning | processing
 
-// A component to show the confirmation message from a redirect
-function ConfirmationMessage() {
-    const searchParams = useSearchParams();
-    const status = searchParams.get('status');
-    const message = searchParams.get('message');
+    useEffect(() => {
+        const scanner = new Html5QrcodeScanner(
+            "scanner-region", 
+            { 
+                fps: 10, 
+                qrbox: { width: 250, height: 250 },
+                showTorchButtonIfSupported: true,
+                showZoomSliderIfSupported: true,
+            },
+            false // verbose
+        );
 
-    // Don't show anything if there are no feedback params in the URL
-    if (!status || !message) {
-        return null;
-    }
+        const onScanSuccess = (decodedText, decodedResult) => {
+            if (scanner && scanner.getState() !== 1) {
+                scanner.clear().catch(error => console.error("Scanner failed to clear.", error));
+            }
+            setStatus('processing');
+            processClaim(decodedText);
+        };
 
-    const isSuccess = status === 'success';
+        scanner.render(onScanSuccess, (error) => {});
+        setStatus('scanning');
 
-    return (
-        <div className={`p-4 rounded-lg mb-6 text-center ${isSuccess ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-            <div className="flex items-center justify-center">
-                {isSuccess ? <CheckCircleIcon className="h-6 w-6 mr-2" /> : <XCircleIcon className="h-6 w-6 mr-2" />}
-                <p className="font-semibold">{message}</p>
-            </div>
-        </div>
-    );
-}
+        return () => {
+            if (scanner && scanner.getState() !== 1) {
+                scanner.clear().catch(err => console.error("Failed to clear scanner on unmount", err));
+            }
+        };
+    }, []);
 
-// The main content of the page
-function ScanPageContent() {
-    const { openScanModal } = useModal(); // Get the function to open the scanner
-    
+    const processClaim = async (urlText) => {
+        try {
+            const url = new URL(urlText);
+            const code = url.searchParams.get('code');
+            if (!code) throw new Error("Invalid QR code format.");
+
+            const response = await api.post(
+                `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/claim`,
+                { code: code }
+            );
+            
+            triggerHapticFeedback();
+            const currentToken = localStorage.getItem('authToken');
+            if (currentToken) login(currentToken);
+            
+            const bonusDetails = response.data.firstScanBonus;
+            if (bonusDetails && bonusDetails.isEligible) {
+                // Navigate away first, then show the modal
+                router.push('/my-points');
+                setTimeout(() => openWelcomeModal(bonusDetails), 500);
+            } else {
+                triggerConfetti();
+                toast.success(response.data.message);
+                router.push('/');
+            }
+        } catch (err) {
+            const errorMessage = err.response?.data?.message || 'Failed to claim code.';
+            toast.error(errorMessage);
+            triggerHapticFeedback();
+            // Reload the page to reset the scanner
+            window.location.reload();
+        }
+    };
+
     return (
         <AnimatedPage>
-            <main className="p-6 bg-white min-h-[90vh] flex flex-col">
-                <div className="flex-grow overflow-y-auto">
-                    <div className="w-full max-w-md mx-auto text-center">
-                        
-                        <ConfirmationMessage />
-                        
-                        <p className="text-gray-600 text-lg my-8">
-                            Authenticate your product by scanning the QR code to claim ownership.
-                        </p>
+            <main className="p-4 bg-white min-h-screen">
+                <div className="w-full max-w-md mx-auto">
+                    <DynamicHeader title="Scan & Claim" />
+                    
+                    {/* The library will render its UI inside this div */}
+                    <div id="scanner-region" className="w-full"></div>
 
-                        <div className="space-y-12">
-                            <ScanStep 
-                                number="1"
-                                Icon={QrCodeIcon}
-                                title="Scan QR Code"
-                                description="Find the unique code on the product packaging."
-                            />
-                            <ScanStep 
-                                number="2"
-                                Icon={StarIcon}
-                                title="Get Rewards Instantly"
-                                description="Points are added to your account right away."
-                            />
-                            <ScanStep 
-                                number="3"
-                                Icon={BanknotesIcon}
-                                title="Collect Points"
-                                description="Save up for exclusive swag and member perks."
-                            />
+                    {status === 'processing' && (
+                        <div className="flex flex-col items-center justify-center mt-4">
+                            <ArrowPathIcon className="animate-spin text-primary h-12 w-12" />
+                            <p className="mt-4 text-lg text-gray-700">Validating your code...</p>
                         </div>
-                    </div>
-                </div>
-
-                <div className="w-full max-w-md mx-auto mt-auto pt-8">
-                    <button 
-                        onClick={openScanModal}
-                        className="bg-black text-white p-5 rounded-xl flex items-center justify-center space-x-3 w-full text-lg font-semibold transform hover:scale-105 active:scale-100 transition-transform"
-                    >
-                        <QrCodeIcon className="h-6 w-6" />
-                        <span>SCAN NOW</span>
-                    </button>
+                    )}
                 </div>
             </main>
         </AnimatedPage>
     );
 }
 
-// The main export must wrap the content in Suspense because ConfirmationMessage uses useSearchParams
-export default function ScanLandingPage() {
+
+export default function ScanPage() {
+    // We keep Suspense because child components might use searchParams in the future
     return (
         <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-            <ScanPageContent />
+            <ScanProcessor />
         </Suspense>
     );
 }
