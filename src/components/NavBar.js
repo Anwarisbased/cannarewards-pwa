@@ -5,16 +5,18 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
 import { motion } from 'framer-motion';
+// 1. Import OUTLINE icons
 import { 
     HomeIcon as HomeOutline, 
     CircleStackIcon as CatalogOutline, 
     QrCodeIcon as ScanOutline, 
     TrophyIcon as RewardsOutline 
 } from '@heroicons/react/24/outline';
+// 2. Import SOLID icons
 import { 
     HomeIcon as HomeSolid, 
     CircleStackIcon as CatalogSolid, 
-    QrCodeIcon as ScanSolid, 
+    QrCodeIcon as ScanSolid, // Although not used for an active link, good practice to have it
     TrophyIcon as RewardsSolid 
 } from '@heroicons/react/24/solid';
 
@@ -22,12 +24,13 @@ import {
 function NavItem({ href, label, IconOutline, IconSolid }) {
     const pathname = usePathname();
     const isActive = pathname === href;
+    // 3. Conditionally choose the icon
     const Icon = isActive ? IconSolid : IconOutline;
-    const textColor = isActive ? 'text-primary' : 'text-gray-500';
+    // 4. Update active/inactive styles
+    const textStyle = isActive ? 'text-primary font-semibold' : 'text-gray-500';
 
     return (
-        <Link href={href} className={`flex-1 flex flex-col items-center justify-center p-2 hover:bg-gray-100 transition-colors ${textColor}`}>
-            {/* --- THIS IS THE CHANGE --- */}
+        <Link href={href} className={`flex-1 flex flex-col items-center justify-center p-2 hover:bg-gray-100 transition-colors ${textStyle}`}>
             <motion.div whileTap={{ scale: 0.9 }} className="text-center">
                 <Icon className="h-6 w-6 mb-1 mx-auto" />
                 <span className="text-xs">{label}</span>
@@ -36,12 +39,11 @@ function NavItem({ href, label, IconOutline, IconSolid }) {
     );
 }
 
-// A special component for the Scan button
+// A special component for the Scan button (no active state)
 function ScanButton({ label, IconOutline }) {
     const { openScanModal } = useModal();
     return (
         <button onClick={openScanModal} className="flex-1 flex flex-col items-center justify-center p-2 text-gray-500 hover:bg-gray-100 transition-colors">
-            {/* --- AND THIS IS THE CHANGE --- */}
             <motion.div whileTap={{ scale: 0.9 }} className="text-center">
                 <IconOutline className="h-6 w-6 mb-1 mx-auto" />
                 <span className="text-xs">{label}</span>

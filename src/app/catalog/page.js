@@ -6,25 +6,34 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import axios from 'axios';
 import AnimatedPage from '../../components/AnimatedPage';
-import CatalogSkeleton from '../../components/CatalogSkeleton'; // 1. Import the new skeleton component
-import { ChevronLeftIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import CatalogSkeleton from '../../components/CatalogSkeleton';
+import DynamicHeader from '../../components/DynamicHeader';
+import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
-// Reusable component for a single Product Card in the grid
+// --- 1. UPDATING THE PRODUCT CARD COMPONENT ---
 function ProductCard({ product }) {
     const imageUrl = product.images && product.images[0] ? product.images[0].src : 'https://via.placeholder.com/150';
 
     return (
         <Link href={`/catalog/${product.id}`} className="block group">
-            <div className="bg-gray-100 rounded-lg">
-                <div className="relative">
-                    <img src={imageUrl} alt={product.name} className="w-full h-48 object-cover rounded-t-lg" />
-                    <div className="absolute bottom-2 right-2 bg-black text-white w-10 h-10 rounded-full flex items-center justify-center transform group-hover:scale-110 transition-transform">
+            {/* The outer div for spacing */}
+            <div className="space-y-2">
+                {/* Image container */}
+                <div className="relative w-full aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                    <img 
+                        src={imageUrl} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
+                    />
+                    {/* The circular "Add" button, styled to match the competitor */}
+                    <div className="absolute bottom-3 right-3 bg-black text-white w-10 h-10 rounded-full flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
                         <span className="text-2xl font-light">+</span>
                     </div>
                 </div>
-                <div className="p-3">
-                    <h3 className="text-sm font-medium truncate">{product.name}</h3>
-                    <p className="text-md font-semibold mt-1">{product.points_cost} Points</p>
+                {/* Text content */}
+                <div className="px-1">
+                    <h3 className="text-sm font-medium truncate text-gray-800">{product.name}</h3>
+                    <p className="text-base font-semibold mt-1 text-gray-900">{product.points_cost} Points</p>
                 </div>
             </div>
         </Link>
@@ -41,7 +50,6 @@ export default function CatalogPage() {
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
-        // Redirect if user is not logged in
         if (!authLoading && !isAuthenticated) {
             router.push('/');
             return;
@@ -52,7 +60,6 @@ export default function CatalogPage() {
                 try {
                     const consumerKey = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY;
                     const consumerSecret = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET;
-                    // Construct the API URL using template literals (backticks)
                     const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/wc/v3/products?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`;
 
                     const response = await axios.get(apiUrl);
@@ -65,7 +72,7 @@ export default function CatalogPage() {
                             images: p.images, 
                             points_cost: pointsMeta ? parseInt(pointsMeta.value) : null 
                         };
-                    }).filter(p => p.points_cost !== null); // Only include products with a point cost
+                    }).filter(p => p.points_cost !== null);
 
                     setAllProducts(formattedProducts);
                     setFilteredProducts(formattedProducts);
@@ -80,7 +87,6 @@ export default function CatalogPage() {
         }
     }, [isAuthenticated, authLoading, router]);
     
-    // This effect runs whenever the search term changes, filtering the products
     useEffect(() => {
         if (searchTerm === '') {
             setFilteredProducts(allProducts);
@@ -92,27 +98,16 @@ export default function CatalogPage() {
         }
     }, [searchTerm, allProducts]);
 
-    // --- 2. THIS IS THE CHANGE ---
-    // Render the skeleton if auth is loading OR if we are fetching products
     if (authLoading || loading) {
         return <CatalogSkeleton />;
     }
-    // --- END OF CHANGE ---
 
     return (
         <AnimatedPage>
             <main className="p-4 bg-white min-h-screen">
                 <div className="w-full max-w-md mx-auto">
-                    <header className="flex items-center mb-4 h-16">
-                        <Link href="/" className="p-2 -ml-2">
-                            <ChevronLeftIcon className="h-6 w-6" />
-                        </Link>
-                        <h1 className="text-xl font-semibold text-center flex-grow">SHOP</h1>
-                        {/* Empty div for spacing to keep title centered */}
-                        <div className="w-6 h-6"></div>
-                    </header>
-
-                    {/* Search Bar */}
+                    <DynamicHeader title="Shop" />
+                    
                     <div className="relative mb-6">
                         <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                         <input 
@@ -124,7 +119,7 @@ export default function CatalogPage() {
                         />
                         {searchTerm && (
                             <XMarkIcon 
-                                className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 cursor-pointer" 
+                                className="absolute right-3 top-1/2 -translate-y-1-2 h-5 w-5 text-gray-500 cursor-pointer" 
                                 onClick={() => setSearchTerm('')}
                             />
                         )}

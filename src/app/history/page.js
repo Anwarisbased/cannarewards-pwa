@@ -7,18 +7,17 @@ import Link from 'next/link';
 import axios from 'axios';
 import AnimatedPage from '../../components/AnimatedPage';
 import EmptyState from '../../components/EmptyState';
+import DynamicHeader from '../../components/DynamicHeader'; // 1. Import
 import { ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
-import { ChevronLeftIcon } from '@heroicons/react/24/solid';
-import { motion } from 'framer-motion'; // 1. Ensure motion is imported
+import { motion } from 'framer-motion';
 import PullToRefresh from 'react-pull-to-refresh';
 
-// 2. Define animation variants for the container and its items
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.07 // The delay between each child animating in
+      staggerChildren: 0.07
     }
   }
 };
@@ -34,7 +33,6 @@ const itemVariants = {
     }
   }
 };
-
 
 export default function HistoryPage() {
     const { isAuthenticated, loading: authLoading } = useAuth();
@@ -74,15 +72,12 @@ export default function HistoryPage() {
     return (
         <AnimatedPage>
             <PullToRefresh onRefresh={handleRefresh}>
-                <main className="p-4 bg-gray-100 min-h-screen">
+                <main className="p-4 bg-white min-h-screen">
                     <div className="w-full max-w-md mx-auto">
-                        <header className="flex items-center mb-6">
-                            <Link href="/profile" className="p-2 -ml-2 hover:bg-gray-200 rounded-full"><ChevronLeftIcon className="h-6 w-6" /></Link>
-                            <h1 className="text-3xl font-bold ml-2">Point History</h1>
-                        </header>
+                        {/* 2. Use the new component */}
+                        <DynamicHeader title="Point History" />
 
                         {history.length > 0 ? (
-                            // 3. Apply the container variants to the list's parent
                             <motion.div 
                                 className="space-y-3"
                                 variants={containerVariants}
@@ -90,10 +85,9 @@ export default function HistoryPage() {
                                 animate="visible"
                             >
                                 {history.map((item, index) => (
-                                    // 4. Apply the item variants to each list item
                                     <motion.div 
                                         key={index}
-                                        className="bg-white p-4 rounded-lg shadow flex justify-between items-center"
+                                        className="bg-white p-4 rounded-lg shadow flex justify-between items-center border border-gray-100"
                                         variants={itemVariants}
                                     >
                                         <div>

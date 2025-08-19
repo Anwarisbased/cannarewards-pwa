@@ -1,42 +1,30 @@
 'use client';
 
 import { Inter } from 'next/font/google';
+import { usePathname } from 'next/navigation'; // 1. Import usePathname
 import { AuthProvider } from '../context/AuthContext';
 import { ModalProvider } from '../context/ModalContext';
 import { ThemeProvider } from '../context/ThemeContext';
 import NavBar from '../components/NavBar';
 import Header from '../components/Header';
 import { Toaster } from 'react-hot-toast';
+import { AnimatePresence } from 'framer-motion'; // 2. Import AnimatePresence
 import './globals.css';
 
-// Initialize the Inter font for optimized performance
 const inter = Inter({ subsets: ['latin'] });
 
-// Since this is a client component ('use client'), we don't export static metadata here.
-// Page titles and metadata can be managed within individual pages or with the useEffect hook if needed.
-
 export default function RootLayout({ children }) {
+  const pathname = usePathname(); // 3. Get the current path to use as a key
+
   return (
     <html lang="en">
       <body 
         className={`${inter.className} pt-20 pb-20 bg-gray-50`} 
         suppressHydrationWarning={true}
       >
-        {/*
-          AuthProvider is the outermost provider as other contexts
-          and components depend on the authentication state it provides.
-        */}
         <AuthProvider>
-          {/*
-            ThemeProvider needs to be inside AuthProvider because it
-            reads theme settings from the user object.
-          */}
           <ThemeProvider>
-            {/*
-              ModalProvider manages global modals and can live inside the other two.
-            */}
             <ModalProvider>
-              {/* The Toaster component renders all toast notifications */}
               <Toaster
                 position="bottom-center"
                 toastOptions={{
@@ -56,15 +44,17 @@ export default function RootLayout({ children }) {
                 }}
               />
 
-              {/* The Header appears at the top of most pages */}
               <Header />
 
               <main>
-                {/* 'children' is where the content of the current page will be rendered */}
-                {children}
+                {/* --- 4. WRAP CHILDREN WITH ANIMATEPRESENCE --- */}
+                <AnimatePresence mode="wait">
+                  <div key={pathname}>
+                    {children}
+                  </div>
+                </AnimatePresence>
               </main>
               
-              {/* The NavBar appears at the bottom of most pages */}
               <NavBar />
             </ModalProvider>
           </ThemeProvider>
