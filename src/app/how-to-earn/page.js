@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react'; // Removed useEffect, useRef
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import AnimatedPage from '../../components/AnimatedPage';
 import DynamicHeader from '../../components/DynamicHeader';
-import { ChevronLeftIcon } from '@heroicons/react/24/solid';
+import { ChevronLeftIcon, ArrowPathRoundedSquareIcon } from '@heroicons/react/24/solid';
 
 const rankStyles = {
     member: { cardClasses: 'bg-gradient-to-br from-gray-400 via-gray-200 to-gray-400', textClasses: 'text-gray-800' },
@@ -18,7 +18,6 @@ const rankStyles = {
     default: { cardClasses: 'bg-gradient-to-br from-gray-700 to-black', textClasses: 'text-white' }
 };
 
-// Reverted FlippableRankCard to its stable state
 function FlippableRankCard({ rankName, pointsRequired, userLifetimePoints, benefits = [] }) {
     const [isFlipped, setIsFlipped] = useState(false);
 
@@ -43,37 +42,57 @@ function FlippableRankCard({ rankName, pointsRequired, userLifetimePoints, benef
                 animate={isFlipped ? "back" : "front"}
                 transition={{ duration: 0.6 }}
             >
-                <div className={`absolute w-full h-full rounded-xl shadow-md p-6 flex flex-col justify-between [backface-visibility:hidden] ${frontCardClasses}`}>
-                    <div>
-                        <p className={`text-sm uppercase ${frontHeaderClasses}`}>{isUnlocked ? "UNLOCKED" : "LOCKED"}</p>
-                        <h2 className="text-4xl font-bold uppercase tracking-wider">{rankName}</h2>
-                        <p className="text-sm">Earn by collecting {pointsRequired.toLocaleString()} points</p>
-                    </div>
-                    {pointsRequired > 0 && (
-                         <div>
-                            <div className="w-full bg-black/20 rounded-full h-2">
-                                <div className="bg-green-500 h-2 rounded-full" style={{ width: `${isUnlocked ? 100 : progress}%` }}></div>
-                            </div>
-                            <p className="text-right text-xs mt-1">{userLifetimePoints.toLocaleString()} / {pointsRequired.toLocaleString()}</p>
+                {/* --- FRONT OF CARD --- */}
+                <div className={`absolute w-full h-full [backface-visibility:hidden]`}>
+                    <div className={`relative w-full h-full rounded-xl shadow-md p-6 flex flex-col justify-between ${frontCardClasses}`}>
+                        <div>
+                            <p className={`text-sm uppercase font-bold ${frontHeaderClasses}`}>{isUnlocked ? "UNLOCKED" : "LOCKED"}</p>
+                            <h2 className="text-4xl font-bold uppercase tracking-wider">{rankName}</h2>
+                            <p className="text-sm">Earn by collecting {pointsRequired.toLocaleString()} points</p>
                         </div>
-                    )}
+                        
+                        {/* --- THIS IS THE CORRECTED LAYOUT --- */}
+                        {pointsRequired > 0 ? (
+                             <div className="space-y-1">
+                                <div className="w-full bg-black/20 rounded-full h-2">
+                                    <div className="bg-green-500 h-2 rounded-full" style={{ width: `${isUnlocked ? 100 : progress}%` }}></div>
+                                </div>
+                                <div className="flex justify-between items-center text-xs">
+                                    <div className="opacity-50 flex items-center space-x-1">
+                                        <span>Tap to flip</span>
+                                        <ArrowPathRoundedSquareIcon className="w-4 h-4" />
+                                    </div>
+                                    <p className="font-bold">{userLifetimePoints.toLocaleString()} / {pointsRequired.toLocaleString()}</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex justify-end items-center text-xs opacity-50 space-x-1">
+                                <span>Tap to flip</span>
+                                <ArrowPathRoundedSquareIcon className="w-4 h-4" />
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                <div className="absolute w-full h-full rounded-xl shadow-md p-6 bg-black text-white [transform:rotateY(180deg)] [backface-visibility:hidden]">
-                    <h3 className="text-lg font-bold mb-3">{rankName} Benefits</h3>
-                    <ul className="list-disc list-inside space-y-1 text-sm">
-                        {benefits.length > 0 ? (
-                            benefits.map((benefit, index) => <li key={index}>{benefit}</li>)
-                        ) : (
-                            <li>No special benefits for this tier.</li>
-                        )}
-                    </ul>
+                {/* --- BACK OF CARD --- */}
+                <div className={`absolute w-full h-full [transform:rotateY(180deg)] [backface-visibility:hidden]`}>
+                    <div className="w-full h-full rounded-xl shadow-md p-6 bg-black text-white">
+                        <h3 className="text-lg font-bold mb-3">{rankName} Benefits</h3>
+                        <ul className="list-disc list-inside space-y-1 text-sm">
+                            {benefits.length > 0 ? (
+                                benefits.map((benefit, index) => <li key={index}>{benefit}</li>)
+                            ) : (
+                                <li>No special benefits for this tier.</li>
+                            )}
+                        </ul>
+                    </div>
                 </div>
             </motion.div>
         </div>
     );
 }
 
+// ... (The rest of the file remains the same)
 const containerVariants = { hidden: { opacity: 1 }, visible: { opacity: 1, transition: { staggerChildren: 0.15 } } };
 const itemVariants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100 } } };
 

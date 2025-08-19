@@ -3,8 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import api from '../../utils/axiosConfig'; // Use our new axios instance
+import api from '../../utils/axiosConfig';
 import AnimatedPage from '../../components/AnimatedPage';
 import EmptyState from '../../components/EmptyState';
 import DynamicHeader from '../../components/DynamicHeader';
@@ -14,24 +13,12 @@ import PullToRefresh from 'react-pull-to-refresh';
 
 const containerVariants = {
   hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.07
-    }
-  }
+  visible: { opacity: 1, transition: { staggerChildren: 0.07 } }
 };
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: {
-        type: 'spring',
-        stiffness: 100
-    }
-  }
+  visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }
 };
 
 export default function HistoryPage() {
@@ -72,40 +59,46 @@ export default function HistoryPage() {
     return (
         <AnimatedPage>
             <PullToRefresh onRefresh={handleRefresh}>
-                <main className="p-4 bg-white min-h-screen">
+                <main className="bg-white min-h-screen">
                     <div className="w-full max-w-md mx-auto">
-                        <DynamicHeader title="Point History" />
+                        {/* --- 1. STICKY HEADER WRAPPER --- */}
+                        <div className="sticky top-0 z-10 bg-white pt-4 px-4 border-b border-gray-200">
+                            <DynamicHeader title="Point History" />
+                        </div>
 
-                        {history.length > 0 ? (
-                            <motion.div 
-                                className="space-y-3"
-                                variants={containerVariants}
-                                initial="hidden"
-                                animate="visible"
-                            >
-                                {history.map((item, index) => (
-                                    <motion.div 
-                                        key={index}
-                                        className="bg-white p-4 rounded-lg shadow flex justify-between items-center border border-gray-100"
-                                        variants={itemVariants}
-                                    >
-                                        <div>
-                                            <p className="font-semibold text-gray-800">{item.description}</p>
-                                            <p className="text-sm text-gray-500">{new Date(item.log_date.replace(' ', 'T')).toLocaleString()}</p>
-                                        </div>
-                                        <span className={`font-bold text-lg ${item.points >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                            {item.points >= 0 ? `+${item.points}` : item.points}
-                                        </span>
-                                    </motion.div>
-                                ))}
-                            </motion.div>
-                        ) : (
-                            <EmptyState 
-                                Icon={ClipboardDocumentListIcon}
-                                title="No Points History Yet"
-                                message="Start scanning products and redeeming rewards to see your activity here."
-                            />
-                        )}
+                        {/* --- 2. SCROLLABLE CONTENT AREA --- */}
+                        <div className="p-4">
+                            {history.length > 0 ? (
+                                <motion.div 
+                                    className="space-y-3"
+                                    variants={containerVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                >
+                                    {history.map((item, index) => (
+                                        <motion.div 
+                                            key={index}
+                                            className="bg-white p-4 rounded-lg shadow flex justify-between items-center border border-gray-100"
+                                            variants={itemVariants}
+                                        >
+                                            <div>
+                                                <p className="font-semibold text-gray-800">{item.description}</p>
+                                                <p className="text-sm text-gray-500">{new Date(item.log_date.replace(' ', 'T')).toLocaleString()}</p>
+                                            </div>
+                                            <span className={`font-bold text-lg ${item.points >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                                {item.points >= 0 ? `+${item.points}` : item.points}
+                                            </span>
+                                        </motion.div>
+                                    ))}
+                                </motion.div>
+                            ) : (
+                                <EmptyState 
+                                    Icon={ClipboardDocumentListIcon}
+                                    title="No Points History Yet"
+                                    message="Start scanning products and redeeming rewards to see your activity here."
+                                />
+                            )}
+                        </div>
                     </div>
                 </main>
             </PullToRefresh>
