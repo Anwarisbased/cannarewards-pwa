@@ -1,7 +1,7 @@
 'use client';
 import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import axios from 'axios';
+import api from '../../utils/axiosConfig'; // Use our new axios instance
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
@@ -27,7 +27,7 @@ function ResetPasswordForm() {
         setLoading(true);
 
         try {
-            const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/password/reset`, { token, email, password });
+            const response = await api.post(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/password/reset`, { token, email, password });
             setMessage(response.data.message);
             toast.success("Password reset!");
             setTimeout(() => router.push('/'), 3000);

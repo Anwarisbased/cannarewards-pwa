@@ -4,10 +4,10 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import axios from 'axios';
+import api from '../../utils/axiosConfig'; // Use our new axios instance
 import AnimatedPage from '../../components/AnimatedPage';
 import EmptyState from '../../components/EmptyState';
-import DynamicHeader from '../../components/DynamicHeader'; // 1. Import
+import DynamicHeader from '../../components/DynamicHeader';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import PullToRefresh from 'react-pull-to-refresh';
@@ -42,7 +42,7 @@ export default function OrdersPage() {
 
     const fetchOrders = useCallback(async () => {
         try {
-            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/my-orders`);
+            const response = await api.get(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/my-orders`);
             setOrders(response.data);
         } catch (err) {
             console.error("Failed to fetch orders:", err);
@@ -74,7 +74,6 @@ export default function OrdersPage() {
             <PullToRefresh onRefresh={handleRefresh}>
                 <main className="p-4 bg-white min-h-screen">
                     <div className="w-full max-w-md mx-auto">
-                        {/* 2. Use the new component */}
                         <DynamicHeader title="My Orders" />
 
                         {orders.length > 0 ? (

@@ -2,20 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
+import { useTransitionDirection } from '../../../context/TransitionContext'; // Import the hook
 import AnimatedPage from '../../../components/AnimatedPage';
 import ShippingFormModal from '../../../components/ShippingFormModal';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import axios from 'axios';
+import api from '../../../utils/axiosConfig';
 import { ChevronLeftIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 
-// We are removing Suspense entirely and just exporting one component.
 export default function ProductDetailPage() {
     const { user, login, isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
     const params = useParams();
-    const productId = params ? params.productId : null; // Safely access productId
+    const { setDirection } = useTransitionDirection(); // Get the function
+    const productId = params ? params.productId : null;
 
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -24,8 +25,12 @@ export default function ProductDetailPage() {
     const [showShippingModal, setShowShippingModal] = useState(false);
     const [isRedeeming, setIsRedeeming] = useState(false);
 
+    const handleBack = () => {
+        setDirection('left');
+        router.back();
+    };
+
     useEffect(() => {
-        // Wait until we have a productId to fetch
         if (isAuthenticated && productId) {
             const fetchProduct = async () => {
                 setLoading(true);
@@ -33,7 +38,7 @@ export default function ProductDetailPage() {
                     const consumerKey = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY;
                     const consumerSecret = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET;
                     const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/wc/v3/products/${productId}?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`;
-                    const response = await axios.get(apiUrl);
+                    const response = await api.get(apiUrl);
                     const pointsMeta = response.data.meta_data.find(meta => meta.key === 'points_cost');
                     setProduct({
                         id: response.data.id,
@@ -56,7 +61,6 @@ export default function ProductDetailPage() {
     }, [productId, isAuthenticated, authLoading, router]);
 
     const handleInitialRedeem = () => {
-        // This check is still good as a safeguard
         if (!user || user.points < product.points_cost) {
             toast.error("You don't have enough points!");
             return;
@@ -68,7 +72,7 @@ export default function ProductDetailPage() {
         setIsRedeeming(true);
         setShowShippingModal(false);
         try {
-            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/redeem`, { productId: product.id, shippingDetails });
+            await api.post(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/redeem`, { productId: product.id, shippingDetails });
             toast.success("Reward redeemed successfully!");
             const currentToken = localStorage.getItem('authToken');
             if (currentToken) login(currentToken);
@@ -92,7 +96,6 @@ export default function ProductDetailPage() {
     
     const imageUrl = product.images && product.images[0] ? product.images[0].src : 'https://via.placeholder.com/300';
 
-    // --- 1. NEW LOGIC FOR THE BUTTON ---
     const userPoints = user ? user.points : 0;
     const canRedeem = userPoints >= product.points_cost;
     const pointsNeeded = product.points_cost - userPoints;
@@ -112,7 +115,6 @@ export default function ProductDetailPage() {
         ? 'bg-primary transform hover:opacity-90' 
         : 'bg-gray-300 cursor-not-allowed'
     }`;
-    // --- END OF NEW LOGIC ---
 
     return (
         <AnimatedPage>
@@ -120,7 +122,7 @@ export default function ProductDetailPage() {
             <main className="p-4 bg-white min-h-screen text-gray-800">
                 <div className="w-full max-w-md mx-auto">
                      <header className="flex items-center mb-4 h-16">
-                        <button onClick={() => router.back()} className="p-2 -ml-2 text-gray-700 hover:bg-gray-100 rounded-full">
+                        <button onClick={handleBack} className="p-2 -ml-2 text-gray-700 hover:bg-gray-100 rounded-full">
                             <ChevronLeftIcon className="h-7 w-7" />
                         </button>
                     </header>
@@ -133,7 +135,6 @@ export default function ProductDetailPage() {
                             <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
                                 {product.points_cost.toFixed(0)} <span className="text-base font-sans font-normal text-gray-700">Points</span>
                             </p>
-                            {/* --- 2. APPLY THE NEW VARIABLES TO THE BUTTON --- */}
                             <button 
                                 onClick={handleInitialRedeem} 
                                 disabled={buttonDisabled} 

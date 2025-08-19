@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../../utils/axiosConfig'; // Use our new axios instance
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
@@ -14,7 +14,7 @@ export default function ForgotPasswordPage() {
         setLoading(true);
         setMessage('');
         try {
-            const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/password/request`, { email });
+            const response = await api.post(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/password/request`, { email });
             setMessage(response.data.message);
             toast.success("Request sent!");
         } catch (error) {

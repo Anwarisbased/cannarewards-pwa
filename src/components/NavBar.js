@@ -4,33 +4,35 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
+import { useTransitionDirection } from '../context/TransitionContext'; // 1. Import the context hook
 import { motion } from 'framer-motion';
-// 1. Import OUTLINE icons
 import { 
     HomeIcon as HomeOutline, 
     CircleStackIcon as CatalogOutline, 
     QrCodeIcon as ScanOutline, 
     TrophyIcon as RewardsOutline 
 } from '@heroicons/react/24/outline';
-// 2. Import SOLID icons
 import { 
     HomeIcon as HomeSolid, 
     CircleStackIcon as CatalogSolid, 
-    QrCodeIcon as ScanSolid, // Although not used for an active link, good practice to have it
+    QrCodeIcon as ScanSolid,
     TrophyIcon as RewardsSolid 
 } from '@heroicons/react/24/solid';
 
-// A reusable component for a single navigation item
 function NavItem({ href, label, IconOutline, IconSolid }) {
     const pathname = usePathname();
+    const { setDirection } = useTransitionDirection(); // 2. Get the setDirection function
     const isActive = pathname === href;
-    // 3. Conditionally choose the icon
     const Icon = isActive ? IconSolid : IconOutline;
-    // 4. Update active/inactive styles
     const textStyle = isActive ? 'text-primary font-semibold' : 'text-gray-500';
 
     return (
-        <Link href={href} className={`flex-1 flex flex-col items-center justify-center p-2 hover:bg-gray-100 transition-colors ${textStyle}`}>
+        // 3. Add an onClick handler to the Link to set the direction
+        <Link 
+            href={href} 
+            onClick={() => setDirection('right')}
+            className={`flex-1 flex flex-col items-center justify-center p-2 hover:bg-gray-100 transition-colors ${textStyle}`}
+        >
             <motion.div whileTap={{ scale: 0.9 }} className="text-center">
                 <Icon className="h-6 w-6 mb-1 mx-auto" />
                 <span className="text-xs">{label}</span>
@@ -39,7 +41,6 @@ function NavItem({ href, label, IconOutline, IconSolid }) {
     );
 }
 
-// A special component for the Scan button (no active state)
 function ScanButton({ label, IconOutline }) {
     const { openScanModal } = useModal();
     return (

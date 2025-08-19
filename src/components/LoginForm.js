@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import axios from 'axios';
-import Link from 'next/link'; // Import the Link component
+import api from '../utils/axiosConfig'; // Use our new axios instance
+import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
@@ -21,7 +21,7 @@ export default function LoginForm({ onSwitchToRegister }) {
     setError('');
 
     try {
-      const response = await axios.post(
+      const response = await api.post(
         `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/login`,
         {
           email: email,
@@ -37,10 +37,7 @@ export default function LoginForm({ onSwitchToRegister }) {
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Login failed. Please check your credentials.';
       setError(errorMessage);
-      // --- THIS IS THE FIX ---
-      // Changed to console.warn to avoid the Next.js error overlay for handled API errors.
       console.warn('Login Failed:', err.response ? JSON.stringify(err.response.data) : err.message);
-      // --- END OF FIX ---
       setLoading(false);
     }
   };

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import axios from 'axios';
+import { useState, useEffect } from 'react';
+import api from '../utils/axiosConfig';
 import { useAuth } from '../context/AuthContext';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import zxcvbn from 'zxcvbn';
 
 export default function RegisterForm({ onSwitchToLogin }) {
   const [firstName, setFirstName] = useState('');
@@ -18,7 +19,19 @@ export default function RegisterForm({ onSwitchToLogin }) {
   const [error, setError] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   
+  const [passwordStrength, setPasswordStrength] = useState(0);
+
   const { login } = useAuth();
+
+  useEffect(() => {
+    if (password) {
+      const result = zxcvbn(password);
+      setPasswordStrength(result.score);
+    } else {
+      setPasswordStrength(0);
+    }
+  }, [password]);
+
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -30,8 +43,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
     setError('');
 
     try {
-      // Step 1: Register the User using our custom /register endpoint
-      await axios.post(
+      await api.post(
         `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/register`,
         {
           username: email,
@@ -47,8 +59,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
         }
       );
 
-      // Step 2: If Registration is Successful, Immediately Log Them In using our custom /login endpoint
-      const loginResponse = await axios.post(
+      const loginResponse = await api.post(
         `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/login`,
         {
           email: email,
@@ -59,20 +70,30 @@ export default function RegisterForm({ onSwitchToLogin }) {
         }
       );
       
-      // Step 3: Update the Global App State, which will trigger the redirect
       login(loginResponse.data.token);
 
     } catch (err) {
-      // Prioritize the specific error message from our WordPress API
       const errorMessage = err.response?.data?.message || 'Registration failed. An unknown error occurred.';
       setError(errorMessage);
-      // --- THIS IS THE FIX ---
-      // Changed to console.warn to avoid the Next.js error overlay for handled API errors.
       console.warn("Registration failed:", err.response ? JSON.stringify(err.response.data) : err.message);
-      // --- END OF FIX ---
       setLoading(false);
     }
   };
+  
+  // --- THIS IS THE CORRECTED LOGIC ---
+  const getStrengthIndicator = () => {
+      switch (passwordStrength) {
+          case 0: return { width: '0%', barColor: 'bg-gray-200', textColor: 'text-gray-400', label: '' };
+          case 1: return { width: '25%', barColor: 'bg-red-500', textColor: 'text-red-500', label: 'Weak' };
+          case 2: return { width: '50%', barColor: 'bg-yellow-500', textColor: 'text-yellow-500', label: 'Fair' };
+          case 3: return { width: '75%', barColor: 'bg-blue-500', textColor: 'text-blue-500', label: 'Good' };
+          case 4: return { width: '100%', barColor: 'bg-green-500', textColor: 'text-green-500', label: 'Strong' };
+          default: return { width: '0%', barColor: 'bg-gray-200', textColor: 'text-gray-400', label: '' };
+      }
+  };
+  
+  const { width, barColor, textColor, label } = getStrengthIndicator();
+  // --- END OF CORRECTION ---
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-8 bg-white rounded-lg shadow-md max-w-sm w-full">
@@ -86,22 +107,34 @@ export default function RegisterForm({ onSwitchToLogin }) {
       </div>
       <input type="email" placeholder="Email Address" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md" />
       
-      <div className="relative">
-        <input 
-            type={passwordVisible ? 'text' : 'password'} 
-            placeholder="Password" 
-            autoComplete="new-password" 
-            value={password} 
-            onChange={e => setPassword(e.target.value)} 
-            required 
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md pr-10" 
-        />
-        <div 
-            className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
-            onClick={() => setPasswordVisible(!passwordVisible)}
-        >
-            {passwordVisible ? <EyeSlashIcon className="h-5 w-5 text-gray-400" /> : <EyeIcon className="h-5 w-5 text-gray-400" />}
+      <div>
+        <div className="relative">
+          <input 
+              type={passwordVisible ? 'text' : 'password'} 
+              placeholder="Password" 
+              autoComplete="new-password" 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+              required 
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md pr-10" 
+          />
+          <div 
+              className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+              onClick={() => setPasswordVisible(!passwordVisible)}
+          >
+              {passwordVisible ? <EyeSlashIcon className="h-5 w-5 text-gray-400" /> : <EyeIcon className="h-5 w-5 text-gray-400" />}
+          </div>
         </div>
+        
+        {password.length > 0 && (
+            <div className="mt-2">
+                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                    <div className={`h-1.5 rounded-full transition-all duration-300 ${barColor}`} style={{ width: width }}></div>
+                </div>
+                {/* --- THIS IS THE CORRECTED RENDER LOGIC --- */}
+                <p className={`text-right text-xs mt-1 font-medium ${textColor}`}>{label}</p>
+            </div>
+        )}
       </div>
       
       <input type="tel" placeholder="Phone Number" autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md" />

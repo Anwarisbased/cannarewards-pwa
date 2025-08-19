@@ -4,33 +4,28 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import axios from 'axios';
+import api from '../../utils/axiosConfig'; // Use our new axios instance
 import AnimatedPage from '../../components/AnimatedPage';
 import CatalogSkeleton from '../../components/CatalogSkeleton';
 import DynamicHeader from '../../components/DynamicHeader';
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
-// --- 1. UPDATING THE PRODUCT CARD COMPONENT ---
 function ProductCard({ product }) {
     const imageUrl = product.images && product.images[0] ? product.images[0].src : 'https://via.placeholder.com/150';
 
     return (
         <Link href={`/catalog/${product.id}`} className="block group">
-            {/* The outer div for spacing */}
             <div className="space-y-2">
-                {/* Image container */}
                 <div className="relative w-full aspect-square bg-gray-100 rounded-lg overflow-hidden">
                     <img 
                         src={imageUrl} 
                         alt={product.name} 
                         className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
                     />
-                    {/* The circular "Add" button, styled to match the competitor */}
                     <div className="absolute bottom-3 right-3 bg-black text-white w-10 h-10 rounded-full flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
                         <span className="text-2xl font-light">+</span>
                     </div>
                 </div>
-                {/* Text content */}
                 <div className="px-1">
                     <h3 className="text-sm font-medium truncate text-gray-800">{product.name}</h3>
                     <p className="text-base font-semibold mt-1 text-gray-900">{product.points_cost} Points</p>
@@ -62,7 +57,7 @@ export default function CatalogPage() {
                     const consumerSecret = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET;
                     const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/wc/v3/products?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`;
 
-                    const response = await axios.get(apiUrl);
+                    const response = await api.get(apiUrl); // Use api instance
                     
                     const formattedProducts = response.data.map(p => {
                         const pointsMeta = p.meta_data.find(meta => meta.key === 'points_cost');
@@ -119,7 +114,7 @@ export default function CatalogPage() {
                         />
                         {searchTerm && (
                             <XMarkIcon 
-                                className="absolute right-3 top-1/2 -translate-y-1-2 h-5 w-5 text-gray-500 cursor-pointer" 
+                                className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 cursor-pointer" 
                                 onClick={() => setSearchTerm('')}
                             />
                         )}

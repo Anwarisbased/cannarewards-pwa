@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import api from '../../../utils/axiosConfig'; // Use our new axios instance
 import AnimatedPage from '../../../components/AnimatedPage';
 import FloatingLabelInput from '../../../components/FloatingLabelInput';
-import DynamicHeader from '../../../components/DynamicHeader'; // 1. Import DynamicHeader
+import DynamicHeader from '../../../components/DynamicHeader';
 import toast from 'react-hot-toast';
 
 export default function EditProfilePage() {
@@ -42,7 +42,7 @@ export default function EditProfilePage() {
         setLoading(true);
 
         try {
-            await axios.post(
+            await api.post(
               `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/me/update`, 
               formData
             );
@@ -72,7 +72,6 @@ export default function EditProfilePage() {
         <AnimatedPage>
             <main className="p-4 bg-white min-h-screen flex flex-col">
                 <div className="w-full max-w-md mx-auto flex-grow flex flex-col">
-                    {/* 2. Use the new component */}
                     <DynamicHeader title="Edit Profile" />
 
                     <form onSubmit={handleSubmit} className="space-y-8 flex-grow flex flex-col">

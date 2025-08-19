@@ -4,12 +4,11 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import axios from 'axios';
+import api from '../utils/axiosConfig'; // Use our new axios instance
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { triggerHapticFeedback } from '@/utils/haptics';
-import { triggerConfetti } from '@/utils/confetti'; // Import our new confetti utility
 
 const modalVariants = {
     hidden: { opacity: 0, scale: 0.95 },
@@ -19,7 +18,7 @@ const modalVariants = {
 
 export default function ScanModal({ closeModal }) {
     const { login } = useAuth();
-    const { openWelcomeModal } = useModal(); 
+    const { openWelcomeModal, triggerConfetti } = useModal(); 
     const [status, setStatus] = useState('scanning');
     
     useEffect(() => {
@@ -58,7 +57,7 @@ export default function ScanModal({ closeModal }) {
             const code = url.searchParams.get('code');
             if (!code) throw new Error("Invalid QR code format.");
 
-            const response = await axios.post(
+            const response = await api.post(
                 `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/claim`,
                 { code: code }
             );
@@ -73,7 +72,6 @@ export default function ScanModal({ closeModal }) {
                 closeModal(); 
                 openWelcomeModal(bonusDetails);
             } else {
-                // Call the confetti utility directly!
                 triggerConfetti();
                 toast.success(response.data.message);
                 setTimeout(() => closeModal(), 1500); 
