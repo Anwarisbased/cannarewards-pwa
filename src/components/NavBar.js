@@ -3,38 +3,21 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { useTransitionDirection } from '../context/TransitionContext';
 import { motion } from 'framer-motion';
-import { triggerHapticFeedback } from '@/utils/haptics'; // 1. Import haptics
-import { 
-    HomeIcon as HomeOutline, 
-    CircleStackIcon as CatalogOutline, 
-    QrCodeIcon as ScanOutline, 
-    TrophyIcon as RewardsOutline 
-} from '@heroicons/react/24/outline';
-import { 
-    HomeIcon as HomeSolid, 
-    CircleStackIcon as CatalogSolid, 
-    QrCodeIcon as ScanSolid,
-    TrophyIcon as RewardsSolid 
-} from '@heroicons/react/24/solid';
+import { triggerHapticFeedback } from '@/utils/haptics';
+import { HomeIcon as HomeOutline, CircleStackIcon as CatalogOutline, QrCodeIcon as ScanOutline, TrophyIcon as RewardsOutline } from '@heroicons/react/24/outline';
+import { HomeIcon as HomeSolid, CircleStackIcon as CatalogSolid, QrCodeIcon as ScanSolid, TrophyIcon as RewardsSolid } from '@heroicons/react/24/solid';
 
 function NavItem({ href, label, IconOutline, IconSolid }) {
     const pathname = usePathname();
-    const { setDirection } = useTransitionDirection();
     const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
     const Icon = isActive ? IconSolid : IconOutline;
     const textStyle = isActive ? 'text-primary font-semibold' : 'text-gray-500';
 
-    const handleClick = () => {
-        setDirection('right');
-        triggerHapticFeedback(); // 2. Trigger feedback on click
-    };
-
     return (
         <Link 
             href={href} 
-            onClick={handleClick} // 3. Use the new handler
+            onClick={triggerHapticFeedback}
             className={`flex-1 flex flex-col items-center justify-center p-2 hover:bg-gray-100 transition-colors ${textStyle}`}
         >
             <motion.div whileTap={{ scale: 0.9 }} className="text-center">
@@ -47,10 +30,7 @@ function NavItem({ href, label, IconOutline, IconSolid }) {
 
 export default function NavBar() {
     const { isAuthenticated } = useAuth();
-    if (!isAuthenticated) {
-        return null;
-    }
-    
+    if (!isAuthenticated) { return null; }
     return (
         <nav className="fixed bottom-0 left-0 right-0 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-10">
             <div className="flex justify-around max-w-md mx-auto h-16">

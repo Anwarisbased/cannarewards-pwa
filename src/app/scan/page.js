@@ -1,52 +1,69 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { useModal } from '../../context/ModalContext'; // We still need this for the WelcomeModal
+import { useModal } from '../../context/ModalContext';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import api from '../../utils/axiosConfig';
 import AnimatedPage from '../../components/AnimatedPage';
 import DynamicHeader from '../../components/DynamicHeader';
-import { ArrowPathIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { triggerHapticFeedback } from '@/utils/haptics';
 
-function ScanProcessor() {
+// We are consolidating back to a single component for simplicity and stability
+export default function ScanPage() {
     const { login } = useAuth();
     const router = useRouter();
     const { openWelcomeModal, triggerConfetti } = useModal();
     const [status, setStatus] = useState('initializing'); // initializing | scanning | processing
 
     useEffect(() => {
-        const scanner = new Html5QrcodeScanner(
-            "scanner-region", 
-            { 
-                fps: 10, 
-                qrbox: { width: 250, height: 250 },
-                showTorchButtonIfSupported: true,
-                showZoomSliderIfSupported: true,
-            },
-            false // verbose
-        );
+        // --- THIS IS THE FIX ---
+        // We ensure the DOM element exists before we try to use it.
+        const scannerRegionEl = document.getElementById("scanner-region");
+        if (!scannerRegionEl) {
+            console.error("Scanner region element not found.");
+            return;
+        }
+        // --- END OF FIX ---
 
-        const onScanSuccess = (decodedText, decodedResult) => {
-            if (scanner && scanner.getState() !== 1) {
-                scanner.clear().catch(error => console.error("Scanner failed to clear.", error));
-            }
-            setStatus('processing');
-            processClaim(decodedText);
-        };
+        let scanner = null;
+        
+        try {
+            scanner = new Html5QrcodeScanner(
+                "scanner-region", 
+                { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 250 },
+                    showTorchButtonIfSupported: true,
+                    showZoomSliderIfSupported: true,
+                },
+                false // verbose
+            );
 
-        scanner.render(onScanSuccess, (error) => {});
-        setStatus('scanning');
+            const onScanSuccess = (decodedText, decodedResult) => {
+                if (scanner && scanner.getState() !== 1) {
+                    scanner.clear().catch(error => console.error("Scanner failed to clear.", error));
+                }
+                setStatus('processing');
+                processClaim(decodedText);
+            };
+
+            scanner.render(onScanSuccess, (error) => {});
+            setStatus('scanning');
+        } catch (error) {
+            console.error("Failed to initialize scanner", error);
+            setStatus('error');
+        }
 
         return () => {
             if (scanner && scanner.getState() !== 1) {
                 scanner.clear().catch(err => console.error("Failed to clear scanner on unmount", err));
             }
         };
-    }, []);
+    }, []); // Empty dependency array to run only once
 
     const processClaim = async (urlText) => {
         try {
@@ -65,7 +82,6 @@ function ScanProcessor() {
             
             const bonusDetails = response.data.firstScanBonus;
             if (bonusDetails && bonusDetails.isEligible) {
-                // Navigate away first, then show the modal
                 router.push('/my-points');
                 setTimeout(() => openWelcomeModal(bonusDetails), 500);
             } else {
@@ -77,7 +93,6 @@ function ScanProcessor() {
             const errorMessage = err.response?.data?.message || 'Failed to claim code.';
             toast.error(errorMessage);
             triggerHapticFeedback();
-            // Reload the page to reset the scanner
             window.location.reload();
         }
     };
@@ -88,7 +103,7 @@ function ScanProcessor() {
                 <div className="w-full max-w-md mx-auto">
                     <DynamicHeader title="Scan & Claim" />
                     
-                    {/* The library will render its UI inside this div */}
+                    {/* This div is the target for the scanner */}
                     <div id="scanner-region" className="w-full"></div>
 
                     {status === 'processing' && (
@@ -97,18 +112,13 @@ function ScanProcessor() {
                             <p className="mt-4 text-lg text-gray-700">Validating your code...</p>
                         </div>
                     )}
+                    {status === 'error' && (
+                        <div className="text-center text-red-500 mt-4">
+                            <p>Could not start the scanner. Please check your camera permissions and refresh the page.</p>
+                        </div>
+                    )}
                 </div>
             </main>
         </AnimatedPage>
-    );
-}
-
-
-export default function ScanPage() {
-    // We keep Suspense because child components might use searchParams in the future
-    return (
-        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-            <ScanProcessor />
-        </Suspense>
     );
 }

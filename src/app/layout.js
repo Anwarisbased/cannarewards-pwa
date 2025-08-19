@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { AuthProvider } from '../context/AuthContext';
 import { ModalProvider } from '../context/ModalContext';
 import { ThemeProvider } from '../context/ThemeContext';
-import { TransitionProvider } from '../context/TransitionContext'; // 1. Import TransitionProvider
+// REMOVED: TransitionProvider import
 import NavBar from '../components/NavBar';
 import Header from '../components/Header';
 import { Toaster } from 'react-hot-toast';
@@ -39,41 +39,27 @@ export default function RootLayout({ children }) {
       >
         <AuthProvider>
           <ThemeProvider>
-            {/* 2. Wrap ModalProvider with TransitionProvider */}
-            <TransitionProvider>
-              <ModalProvider>
-                <Toaster
-                  position="bottom-center"
-                  toastOptions={{
-                    duration: 4000,
-                    style: {
-                      background: '#1f2937',
-                      color: '#ffffff',
-                      borderRadius: '99px',
-                      padding: '12px 20px',
-                    },
-                    success: {
-                      iconTheme: { primary: '#22c55e', secondary: '#ffffff' },
-                    },
-                    error: {
-                      iconTheme: { primary: '#ef4444', secondary: '#ffffff' },
-                    },
-                  }}
-                />
-
-                <Header />
-
-                <main>
-                  <AnimatePresence mode="wait">
-                    <div key={pathname}>
-                      {children}
-                    </div>
-                  </AnimatePresence>
-                </main>
-                
-                <NavBar />
-              </ModalProvider>
-            </TransitionProvider>
+            {/* REMOVED: TransitionProvider wrapper */}
+            <ModalProvider>
+              <Toaster
+                position="bottom-center"
+                toastOptions={{
+                  duration: 4000,
+                  style: { background: '#1f2937', color: '#ffffff', borderRadius: '99px', padding: '12px 20px' },
+                  success: { iconTheme: { primary: '#22c55e', secondary: '#ffffff' } },
+                  error: { iconTheme: { primary: '#ef4444', secondary: '#ffffff' } },
+                }}
+              />
+              <Header />
+              <main>
+                <AnimatePresence mode="wait">
+                  <div key={pathname}>
+                    {children}
+                  </div>
+                </AnimatePresence>
+              </main>
+              <NavBar />
+            </ModalProvider>
           </ThemeProvider>
         </AuthProvider>
       </body>

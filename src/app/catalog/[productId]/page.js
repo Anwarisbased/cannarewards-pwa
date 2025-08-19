@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { useTransitionDirection } from '../../../context/TransitionContext';
 import AnimatedPage from '../../../components/AnimatedPage';
 import ShippingFormModal from '../../../components/ShippingFormModal';
-import ProductDetailSkeleton from '../../../components/ProductDetailSkeleton'; // 1. Import skeleton
+import ProductDetailSkeleton from '../../../components/ProductDetailSkeleton';
 import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
 import api from '../../../utils/axiosConfig';
 import { ChevronLeftIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
@@ -16,20 +14,12 @@ export default function ProductDetailPage() {
     const { user, login, isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
     const params = useParams();
-    const { setDirection } = useTransitionDirection();
     const productId = params ? params.productId : null;
-
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    
     const [showShippingModal, setShowShippingModal] = useState(false);
     const [isRedeeming, setIsRedeeming] = useState(false);
-
-    const handleBack = () => {
-        setDirection('left');
-        router.back();
-    };
 
     useEffect(() => {
         if (isAuthenticated && productId) {
@@ -41,31 +31,16 @@ export default function ProductDetailPage() {
                     const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/wc/v3/products/${productId}?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`;
                     const response = await api.get(apiUrl);
                     const pointsMeta = response.data.meta_data.find(meta => meta.key === 'points_cost');
-                    setProduct({
-                        id: response.data.id,
-                        name: response.data.name,
-                        images: response.data.images,
-                        description: response.data.description.replace(/<[^>]*>?/gm, ''),
-                        points_cost: pointsMeta ? parseInt(pointsMeta.value) : null
-                    });
+                    setProduct({ id: response.data.id, name: response.data.name, images: response.data.images, description: response.data.description.replace(/<[^>]*>?/gm, ''), points_cost: pointsMeta ? parseInt(pointsMeta.value) : null });
                     setError('');
-                } catch (err) {
-                    setError('Could not load product details.');
-                } finally {
-                    setLoading(false);
-                }
+                } catch (err) { setError('Could not load product details.'); } finally { setLoading(false); }
             };
             fetchProduct();
-        } else if (!authLoading && !isAuthenticated) {
-            router.push('/');
-        }
+        } else if (!authLoading && !isAuthenticated) { router.push('/'); }
     }, [productId, isAuthenticated, authLoading, router]);
 
     const handleInitialRedeem = () => {
-        if (!user || user.points < product.points_cost) {
-            toast.error("You don't have enough points!");
-            return;
-        }
+        if (!user || user.points < product.points_cost) { toast.error("You don't have enough points!"); return; }
         setShowShippingModal(true);
     };
 
@@ -78,73 +53,33 @@ export default function ProductDetailPage() {
             const currentToken = localStorage.getItem('authToken');
             if (currentToken) login(currentToken);
             router.push('/orders');
-        } catch (err) {
-            toast.error(err.response?.data?.message || 'Redemption failed.');
-        } finally {
-            setIsRedeeming(false);
-        }
+        } catch (err) { toast.error(err.response?.data?.message || 'Redemption failed.'); } finally { setIsRedeeming(false); }
     };
 
-    // 2. --- RENDER THE SKELETON ---
-    if (authLoading || loading || !productId) {
-        return <ProductDetailSkeleton />;
-    }
-
-    if (error) {
-        return <div className="min-h-screen bg-white text-center p-10">{error}</div>;
-    }
-    if (!product) {
-        return <div className="min-h-screen bg-white text-center p-10">Product not found.</div>;
-    }
+    if (authLoading || loading || !productId) { return <ProductDetailSkeleton />; }
+    if (error) { return <div className="min-h-screen bg-white text-center p-10">{error}</div>; }
+    if (!product) { return <div className="min-h-screen bg-white text-center p-10">Product not found.</div>; }
     
     const imageUrl = product.images && product.images[0] ? product.images[0].src : 'https://via.placeholder.com/300';
-
     const userPoints = user ? user.points : 0;
     const canRedeem = userPoints >= product.points_cost;
     const pointsNeeded = product.points_cost - userPoints;
-
-    let buttonText = '';
-    if (isRedeeming) {
-        buttonText = 'Processing...';
-    } else if (canRedeem) {
-        buttonText = `Redeem for ${product.points_cost} Points`;
-    } else {
-        buttonText = `Earn ${pointsNeeded} more points`;
-    }
-
+    let buttonText = isRedeeming ? 'Processing...' : (canRedeem ? `Redeem for ${product.points_cost} Points` : `Earn ${pointsNeeded} more points`);
     const buttonDisabled = isRedeeming || !canRedeem;
-    const buttonClassName = `text-white font-semibold py-3 px-8 rounded-md transition-all w-full sm:w-auto text-center ${
-        canRedeem && !isRedeeming 
-        ? 'bg-primary transform hover:opacity-90' 
-        : 'bg-gray-300 cursor-not-allowed'
-    }`;
+    const buttonClassName = `text-white font-semibold py-3 px-8 rounded-md transition-all w-full sm:w-auto text-center ${canRedeem && !isRedeeming ? 'bg-primary transform hover:opacity-90' : 'bg-gray-300 cursor-not-allowed'}`;
 
     return (
         <AnimatedPage>
             {showShippingModal && <ShippingFormModal onCancel={() => setShowShippingModal(false)} onSubmit={handleFinalRedeem} />}
             <main className="p-4 bg-white min-h-screen text-gray-800">
                 <div className="w-full max-w-md mx-auto">
-                     <header className="flex items-center mb-4 h-16">
-                        <button onClick={handleBack} className="p-2 -ml-2 text-gray-700 hover:bg-gray-100 rounded-full">
-                            <ChevronLeftIcon className="h-7 w-7" />
-                        </button>
-                    </header>
+                     <header className="flex items-center mb-4 h-16"><button onClick={() => router.back()} className="p-2 -ml-2 text-gray-700 hover:bg-gray-100 rounded-full"><ChevronLeftIcon className="h-7 w-7" /></button></header>
                     <div className="px-4">
-                        <div className="bg-gray-100 rounded-lg mb-6">
-                            <img src={imageUrl} alt={product.name} className="w-full aspect-square object-contain" />
-                        </div>
+                        <div className="bg-gray-100 rounded-lg mb-6"><img src={imageUrl} alt={product.name} className="w-full aspect-square object-contain" /></div>
                         <p className="text-xl md:text-2xl font-semibold mb-4">{product.name}</p>
                         <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-                            <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
-                                {product.points_cost.toFixed(0)} <span className="text-base font-sans font-normal text-gray-700">Points</span>
-                            </p>
-                            <button 
-                                onClick={handleInitialRedeem} 
-                                disabled={buttonDisabled} 
-                                className={buttonClassName}
-                            >
-                                {buttonText}
-                            </button>
+                            <p className="text-3xl font-mono font-bold tracking-tighter text-primary">{product.points_cost.toFixed(0)} <span className="text-base font-sans font-normal text-gray-700">Points</span></p>
+                            <button onClick={handleInitialRedeem} disabled={buttonDisabled} className={buttonClassName}>{buttonText}</button>
                         </div>
                         <div className="border-t border-gray-200 pt-6">
                             <h2 className="font-semibold mb-2 text-sm uppercase tracking-wider text-gray-600">Description</h2>
