@@ -8,7 +8,7 @@ import ProductDetailSkeleton from '../../../components/ProductDetailSkeleton';
 import { useRouter, useParams } from 'next/navigation';
 import api from '../../../utils/axiosConfig';
 import { ChevronLeftIcon } from '@heroicons/react/24/solid';
-import toast from 'react-hot-toast';
+import { showToast } from '../../../components/CustomToast'; // Import new helper
 
 export default function ProductDetailPage() {
     const { user, login, isAuthenticated, loading: authLoading } = useAuth();
@@ -40,7 +40,10 @@ export default function ProductDetailPage() {
     }, [productId, isAuthenticated, authLoading, router]);
 
     const handleInitialRedeem = () => {
-        if (!user || user.points < product.points_cost) { toast.error("You don't have enough points!"); return; }
+        if (!user || user.points < product.points_cost) { 
+            showToast('error', 'Not Enough Points', "You don't have enough points to redeem this reward!");
+            return; 
+        }
         setShowShippingModal(true);
     };
 
@@ -49,11 +52,15 @@ export default function ProductDetailPage() {
         setShowShippingModal(false);
         try {
             await api.post(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/redeem`, { productId: product.id, shippingDetails });
-            toast.success("Reward redeemed successfully!");
+            showToast('success', 'Success!', 'Your reward has been redeemed.');
             const currentToken = localStorage.getItem('authToken');
             if (currentToken) login(currentToken);
             router.push('/orders');
-        } catch (err) { toast.error(err.response?.data?.message || 'Redemption failed.'); } finally { setIsRedeeming(false); }
+        } catch (err) { 
+            showToast('error', 'Redemption Failed', err.response?.data?.message || 'An unknown error occurred.');
+        } finally { 
+            setIsRedeeming(false); 
+        }
     };
 
     if (authLoading || loading || !productId) { return <ProductDetailSkeleton />; }

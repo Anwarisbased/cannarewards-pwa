@@ -9,25 +9,22 @@ import api from '../../utils/axiosConfig';
 import AnimatedPage from '../../components/AnimatedPage';
 import DynamicHeader from '../../components/DynamicHeader';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast';
+import toast from 'react-hot-toast'; // Keep the original toast for simple messages
+import { showToast } from '../../components/CustomToast'; // Import our new helper
 import { triggerHapticFeedback } from '@/utils/haptics';
 
-// We are consolidating back to a single component for simplicity and stability
 export default function ScanPage() {
     const { login } = useAuth();
     const router = useRouter();
     const { openWelcomeModal, triggerConfetti } = useModal();
-    const [status, setStatus] = useState('initializing'); // initializing | scanning | processing
+    const [status, setStatus] = useState('initializing');
 
     useEffect(() => {
-        // --- THIS IS THE FIX ---
-        // We ensure the DOM element exists before we try to use it.
         const scannerRegionEl = document.getElementById("scanner-region");
         if (!scannerRegionEl) {
             console.error("Scanner region element not found.");
             return;
         }
-        // --- END OF FIX ---
 
         let scanner = null;
         
@@ -40,7 +37,7 @@ export default function ScanPage() {
                     showTorchButtonIfSupported: true,
                     showZoomSliderIfSupported: true,
                 },
-                false // verbose
+                false
             );
 
             const onScanSuccess = (decodedText, decodedResult) => {
@@ -63,7 +60,7 @@ export default function ScanPage() {
                 scanner.clear().catch(err => console.error("Failed to clear scanner on unmount", err));
             }
         };
-    }, []); // Empty dependency array to run only once
+    }, []);
 
     const processClaim = async (urlText) => {
         try {
@@ -86,12 +83,14 @@ export default function ScanPage() {
                 setTimeout(() => openWelcomeModal(bonusDetails), 500);
             } else {
                 triggerConfetti();
+                // We use a simple toast here, but could use the custom one
                 toast.success(response.data.message);
                 router.push('/');
             }
         } catch (err) {
             const errorMessage = err.response?.data?.message || 'Failed to claim code.';
-            toast.error(errorMessage);
+            // Use our new custom error toast
+            showToast('error', 'Scan Failed', errorMessage);
             triggerHapticFeedback();
             window.location.reload();
         }
@@ -103,7 +102,6 @@ export default function ScanPage() {
                 <div className="w-full max-w-md mx-auto">
                     <DynamicHeader title="Scan & Claim" />
                     
-                    {/* This div is the target for the scanner */}
                     <div id="scanner-region" className="w-full"></div>
 
                     {status === 'processing' && (

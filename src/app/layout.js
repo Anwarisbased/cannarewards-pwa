@@ -1,15 +1,12 @@
 'use client';
 
 import { Inter } from 'next/font/google';
-import { usePathname } from 'next/navigation';
 import { AuthProvider } from '../context/AuthContext';
 import { ModalProvider } from '../context/ModalContext';
 import { ThemeProvider } from '../context/ThemeContext';
-// REMOVED: TransitionProvider import
 import NavBar from '../components/NavBar';
 import Header from '../components/Header';
-import { Toaster } from 'react-hot-toast';
-import { AnimatePresence } from 'framer-motion';
+import { Toaster } from 'react-hot-toast'; // Toaster is still the container
 import 'nprogress/nprogress.css';
 import './globals.css';
 
@@ -26,7 +23,6 @@ const nProgressStyle = `
 `;
 
 export default function RootLayout({ children }) {
-  const pathname = usePathname();
 
   return (
     <html lang="en">
@@ -39,24 +35,12 @@ export default function RootLayout({ children }) {
       >
         <AuthProvider>
           <ThemeProvider>
-            {/* REMOVED: TransitionProvider wrapper */}
             <ModalProvider>
-              <Toaster
-                position="bottom-center"
-                toastOptions={{
-                  duration: 4000,
-                  style: { background: '#1f2937', color: '#ffffff', borderRadius: '99px', padding: '12px 20px' },
-                  success: { iconTheme: { primary: '#22c55e', secondary: '#ffffff' } },
-                  error: { iconTheme: { primary: '#ef4444', secondary: '#ffffff' } },
-                }}
-              />
+              {/* REMOVED: All the custom toastOptions are gone, we use the default container */}
+              <Toaster />
               <Header />
               <main>
-                <AnimatePresence mode="wait">
-                  <div key={pathname}>
-                    {children}
-                  </div>
-                </AnimatePresence>
+                {children}
               </main>
               <NavBar />
             </ModalProvider>

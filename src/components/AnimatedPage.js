@@ -11,10 +11,7 @@ const pageVariants = {
     opacity: 1,
     y: 0,
   },
-  exit: { // We can keep the exit animation for now, AnimatePresence will handle it
-    opacity: 0,
-    y: -15,
-  }
+  // The 'exit' variant is no longer used by this component's parent
 };
 
 const pageTransition = {
@@ -28,7 +25,7 @@ export default function AnimatedPage({ children }) {
     <motion.div
       initial="initial"
       animate="in"
-      exit="exit"
+      // REMOVED: exit="exit"
       variants={pageVariants}
       transition={pageTransition}
     >

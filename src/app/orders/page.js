@@ -8,6 +8,7 @@ import api from '../../utils/axiosConfig';
 import AnimatedPage from '../../components/AnimatedPage';
 import EmptyState from '../../components/EmptyState';
 import DynamicHeader from '../../components/DynamicHeader';
+import ImageWithLoader from '../../components/ImageWithLoader';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import PullToRefresh from 'react-pull-to-refresh';
@@ -34,7 +35,6 @@ const itemVariants = {
   }
 };
 
-// --- 1. DEFINE OUR TABS AND STATUS MAPPING ---
 const TABS = {
     ONGOING: 'Ongoing',
     COMPLETED: 'Completed',
@@ -54,7 +54,7 @@ export default function OrdersPage() {
     const [allOrders, setAllOrders] = useState([]);
     const [filteredOrders, setFilteredOrders] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState(TABS.ONGOING); // 2. Add state for active tab
+    const [activeTab, setActiveTab] = useState(TABS.ONGOING);
 
     const fetchOrders = useCallback(async () => {
         try {
@@ -65,7 +65,6 @@ export default function OrdersPage() {
         }
     }, []);
 
-    // 3. New effect to filter orders whenever the activeTab or allOrders change
     useEffect(() => {
         const statusesToShow = STATUS_MAP[activeTab];
         const filtered = allOrders.filter(order => statusesToShow.includes(order.status));
@@ -96,61 +95,75 @@ export default function OrdersPage() {
     return (
         <AnimatedPage>
             <PullToRefresh onRefresh={handleRefresh}>
-                <main className="p-4 bg-white min-h-screen">
+                {/* 1. Use a standard main tag here, not the one inside the scrollable area */}
+                <main className="bg-white min-h-screen">
                     <div className="w-full max-w-md mx-auto">
-                        <DynamicHeader title="My Orders" />
-
-                        {/* --- 4. TABS UI --- */}
-                        <div className="flex justify-between items-center bg-gray-100 rounded-lg p-1 mb-6">
-                            {Object.values(TABS).map(tabName => (
-                                <button
-                                    key={tabName}
-                                    onClick={() => setActiveTab(tabName)}
-                                    className={`w-full py-2 text-sm font-semibold rounded-md transition-colors ${
-                                        activeTab === tabName
-                                            ? 'bg-white text-gray-800 shadow'
-                                            : 'bg-transparent text-gray-500 hover:bg-gray-200'
-                                    }`}
-                                >
-                                    {tabName}
-                                </button>
-                            ))}
+                        {/* --- 2. STICKY HEADER WRAPPER --- */}
+                        <div className="sticky top-0 z-10 bg-white pt-4 px-4 border-b border-gray-200">
+                            <DynamicHeader title="My Orders" />
+                            <div className="flex justify-between items-center bg-gray-100 rounded-lg p-1 mb-4">
+                                {Object.values(TABS).map(tabName => (
+                                    <button
+                                        key={tabName}
+                                        onClick={() => setActiveTab(tabName)}
+                                        className={`w-full py-2 text-sm font-semibold rounded-md transition-colors ${
+                                            activeTab === tabName
+                                                ? 'bg-white text-gray-800 shadow'
+                                                : 'bg-transparent text-gray-500 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        {tabName}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
-                        {/* --- 5. RENDER FILTERED ORDERS --- */}
-                        {filteredOrders.length > 0 ? (
-                             <motion.div 
-                                className="space-y-4"
-                                variants={containerVariants}
-                                initial="hidden"
-                                animate="visible"
-                                // Add a key to force re-animation when the tab changes
-                                key={activeTab} 
-                             >
-                                {filteredOrders.map(order => (
-                                    <motion.div 
-                                        key={order.orderId} 
-                                        className="bg-white p-4 rounded-lg shadow border border-gray-100"
-                                        variants={itemVariants}
-                                    >
-                                        <div className="flex justify-between items-center border-b pb-2 mb-2">
-                                            <div>
-                                                <p className="font-bold text-lg text-gray-800">Order #{order.orderId}</p>
-                                                <p className="text-sm text-gray-600">{order.date}</p>
+                        {/* --- 3. SCROLLABLE CONTENT AREA --- */}
+                        <div className="p-4">
+                            {filteredOrders.length > 0 ? (
+                                <motion.div 
+                                    className="space-y-4"
+                                    variants={containerVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    key={activeTab} 
+                                >
+                                    {filteredOrders.map(order => (
+                                        <motion.div 
+                                            key={order.orderId} 
+                                            className="bg-white p-4 rounded-lg shadow border border-gray-100"
+                                            variants={itemVariants}
+                                        >
+                                            <div className="flex items-center space-x-4">
+                                                <div className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                                                    <ImageWithLoader
+                                                        src={order.imageUrl}
+                                                        alt={order.items}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                                <div className="flex-grow">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <p className="font-bold text-base text-gray-800">{order.items}</p>
+                                                            <p className="text-sm text-gray-500">Order #{order.orderId}</p>
+                                                        </div>
+                                                        <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full mt-1">{order.status}</span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-400 mt-1">{order.date}</p>
+                                                </div>
                                             </div>
-                                            <span className="text-sm font-medium bg-primary/10 text-primary px-2.5 py-1 rounded-full">{order.status}</span>
-                                        </div>
-                                        <p className="mt-2 font-semibold text-gray-700">{order.items}</p>
-                                    </motion.div>
-                                ))}
-                            </motion.div>
-                        ) : (
-                             <EmptyState 
-                                Icon={ShoppingCartIcon}
-                                title={`No ${activeTab.toLowerCase()} orders`}
-                                message="Your orders will appear here once their status changes."
-                            />
-                        )}
+                                        </motion.div>
+                                    ))}
+                                </motion.div>
+                            ) : (
+                                <EmptyState 
+                                    Icon={ShoppingCartIcon}
+                                    title={`No ${activeTab.toLowerCase()} orders`}
+                                    message="Your orders will appear here once their status changes."
+                                />
+                            )}
+                        </div>
                     </div>
                 </main>
             </PullToRefresh>

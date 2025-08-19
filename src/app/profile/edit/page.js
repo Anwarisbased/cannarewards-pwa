@@ -3,23 +3,17 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { useRouter } from 'next/navigation';
-import api from '../../../utils/axiosConfig'; // Use our new axios instance
+import api from '../../../utils/axiosConfig';
 import AnimatedPage from '../../../components/AnimatedPage';
 import FloatingLabelInput from '../../../components/FloatingLabelInput';
 import DynamicHeader from '../../../components/DynamicHeader';
-import toast from 'react-hot-toast';
+import { showToast } from '../../../components/CustomToast'; // Import new helper
 
 export default function EditProfilePage() {
     const { user, login, isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
 
-    const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
-        dateOfBirth: '',
-        phone: ''
-    });
-    
+    const [formData, setFormData] = useState({ firstName: '', lastName: '', dateOfBirth: '', phone: '' });
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -47,17 +41,15 @@ export default function EditProfilePage() {
               formData
             );
             
-            toast.success('Profile updated successfully!');
+            showToast('success', 'Profile Updated', 'Your changes have been saved successfully.');
             
             const currentToken = localStorage.getItem('authToken');
-            if (currentToken) {
-                login(currentToken);
-            }
+            if (currentToken) { login(currentToken); }
 
             router.push('/profile');
 
         } catch (err) {
-            toast.error('Failed to update profile. Please try again.');
+            showToast('error', 'Update Failed', 'Could not save your profile. Please try again.');
             console.error("Profile update failed:", err);
         } finally {
             setLoading(false);
