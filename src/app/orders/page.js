@@ -9,8 +9,32 @@ import AnimatedPage from '../../components/AnimatedPage';
 import EmptyState from '../../components/EmptyState';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
 import { ChevronLeftIcon } from '@heroicons/react/24/solid';
-import { motion } from 'framer-motion';
+import { motion } from 'framer-motion'; // 1. Ensure motion is imported
 import PullToRefresh from 'react-pull-to-refresh';
+
+// 2. Define animation variants (can be copied from HistoryPage)
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.07
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+        type: 'spring',
+        stiffness: 100
+    }
+  }
+};
+
 
 export default function OrdersPage() {
     const { isAuthenticated, loading: authLoading } = useAuth();
@@ -58,14 +82,17 @@ export default function OrdersPage() {
                         </header>
 
                         {orders.length > 0 ? (
-                             <div className="space-y-4">
+                             <motion.div 
+                                className="space-y-4"
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="visible"
+                             >
                                 {orders.map(order => (
                                     <motion.div 
                                         key={order.orderId} 
                                         className="bg-white p-4 rounded-lg shadow"
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: order.orderId * 0.05 }}
+                                        variants={itemVariants}
                                     >
                                         <div className="flex justify-between items-center border-b pb-2 mb-2">
                                             <div>
@@ -77,7 +104,7 @@ export default function OrdersPage() {
                                         <p className="mt-2 font-semibold text-gray-700">{order.items}</p>
                                     </motion.div>
                                 ))}
-                            </div>
+                            </motion.div>
                         ) : (
                              <EmptyState 
                                 Icon={ShoppingCartIcon}

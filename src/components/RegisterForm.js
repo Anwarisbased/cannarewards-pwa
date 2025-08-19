@@ -63,8 +63,13 @@ export default function RegisterForm({ onSwitchToLogin }) {
       login(loginResponse.data.token);
 
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
-      console.error("Registration failed:", err.response?.data || err.message);
+      // Prioritize the specific error message from our WordPress API
+      const errorMessage = err.response?.data?.message || 'Registration failed. An unknown error occurred.';
+      setError(errorMessage);
+      // --- THIS IS THE FIX ---
+      // Changed to console.warn to avoid the Next.js error overlay for handled API errors.
+      console.warn("Registration failed:", err.response ? JSON.stringify(err.response.data) : err.message);
+      // --- END OF FIX ---
       setLoading(false);
     }
   };

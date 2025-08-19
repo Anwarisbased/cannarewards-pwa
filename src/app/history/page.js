@@ -9,8 +9,32 @@ import AnimatedPage from '../../components/AnimatedPage';
 import EmptyState from '../../components/EmptyState';
 import { ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
 import { ChevronLeftIcon } from '@heroicons/react/24/solid';
-import { motion } from 'framer-motion';
+import { motion } from 'framer-motion'; // 1. Ensure motion is imported
 import PullToRefresh from 'react-pull-to-refresh';
+
+// 2. Define animation variants for the container and its items
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.07 // The delay between each child animating in
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+        type: 'spring',
+        stiffness: 100
+    }
+  }
+};
+
 
 export default function HistoryPage() {
     const { isAuthenticated, loading: authLoading } = useAuth();
@@ -58,14 +82,19 @@ export default function HistoryPage() {
                         </header>
 
                         {history.length > 0 ? (
-                            <div className="space-y-3">
+                            // 3. Apply the container variants to the list's parent
+                            <motion.div 
+                                className="space-y-3"
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="visible"
+                            >
                                 {history.map((item, index) => (
+                                    // 4. Apply the item variants to each list item
                                     <motion.div 
                                         key={index}
                                         className="bg-white p-4 rounded-lg shadow flex justify-between items-center"
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: index * 0.05 }}
+                                        variants={itemVariants}
                                     >
                                         <div>
                                             <p className="font-semibold text-gray-800">{item.description}</p>
@@ -76,7 +105,7 @@ export default function HistoryPage() {
                                         </span>
                                     </motion.div>
                                 ))}
-                            </div>
+                            </motion.div>
                         ) : (
                             <EmptyState 
                                 Icon={ClipboardDocumentListIcon}

@@ -35,8 +35,12 @@ export default function LoginForm({ onSwitchToRegister }) {
       login(response.data.token);
 
     } catch (err) {
-      setError('Login failed. Please check your username and password.');
-      console.error('Login Failed:', err.response?.data || err.message);
+      const errorMessage = err.response?.data?.message || 'Login failed. Please check your credentials.';
+      setError(errorMessage);
+      // --- THIS IS THE FIX ---
+      // Changed to console.warn to avoid the Next.js error overlay for handled API errors.
+      console.warn('Login Failed:', err.response ? JSON.stringify(err.response.data) : err.message);
+      // --- END OF FIX ---
       setLoading(false);
     }
   };
@@ -85,13 +89,11 @@ export default function LoginForm({ onSwitchToRegister }) {
         </div>
       </div>
 
-      {/* --- THIS IS THE NEW "FORGOT PASSWORD" LINK --- */}
       <div className="text-right text-sm">
         <Link href="/forgot-password" className="font-medium text-primary hover:opacity-90 underline">
           Forgot Password?
         </Link>
       </div>
-      {/* --- END OF NEW LINK --- */}
 
       <button 
         type="submit" 

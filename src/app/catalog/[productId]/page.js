@@ -1,22 +1,21 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
-// --- CORRECTED PATHS ---
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import AnimatedPage from '../../../components/AnimatedPage';
 import ShippingFormModal from '../../../components/ShippingFormModal';
-// --- END CORRECTION ---
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import axios from 'axios';
 import { ChevronLeftIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 
-function ProductDetailProcessor() {
+// We are removing Suspense entirely and just exporting one component.
+export default function ProductDetailPage() {
     const { user, login, isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
     const params = useParams();
-    const productId = params.productId;
+    const productId = params ? params.productId : null; // Safely access productId
 
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -26,6 +25,7 @@ function ProductDetailProcessor() {
     const [isRedeeming, setIsRedeeming] = useState(false);
 
     useEffect(() => {
+        // Wait until we have a productId to fetch
         if (isAuthenticated && productId) {
             const fetchProduct = async () => {
                 setLoading(true);
@@ -56,6 +56,7 @@ function ProductDetailProcessor() {
     }, [productId, isAuthenticated, authLoading, router]);
 
     const handleInitialRedeem = () => {
+        // This check is still good as a safeguard
         if (!user || user.points < product.points_cost) {
             toast.error("You don't have enough points!");
             return;
@@ -79,7 +80,7 @@ function ProductDetailProcessor() {
         }
     };
 
-    if (authLoading || loading) {
+    if (authLoading || loading || !productId) {
         return <div className="min-h-screen bg-white text-center p-10">Loading Product...</div>;
     }
     if (error) {
@@ -90,6 +91,28 @@ function ProductDetailProcessor() {
     }
     
     const imageUrl = product.images && product.images[0] ? product.images[0].src : 'https://via.placeholder.com/300';
+
+    // --- 1. NEW LOGIC FOR THE BUTTON ---
+    const userPoints = user ? user.points : 0;
+    const canRedeem = userPoints >= product.points_cost;
+    const pointsNeeded = product.points_cost - userPoints;
+
+    let buttonText = '';
+    if (isRedeeming) {
+        buttonText = 'Processing...';
+    } else if (canRedeem) {
+        buttonText = `Redeem for ${product.points_cost} Points`;
+    } else {
+        buttonText = `Earn ${pointsNeeded} more points`;
+    }
+
+    const buttonDisabled = isRedeeming || !canRedeem;
+    const buttonClassName = `text-white font-semibold py-3 px-8 rounded-md transition-all w-full sm:w-auto text-center ${
+        canRedeem && !isRedeeming 
+        ? 'bg-primary transform hover:opacity-90' 
+        : 'bg-gray-300 cursor-not-allowed'
+    }`;
+    // --- END OF NEW LOGIC ---
 
     return (
         <AnimatedPage>
@@ -106,12 +129,17 @@ function ProductDetailProcessor() {
                             <img src={imageUrl} alt={product.name} className="w-full aspect-square object-contain" />
                         </div>
                         <p className="text-xl md:text-2xl font-semibold mb-4">{product.name}</p>
-                        <div className="flex justify-between items-center mb-8">
+                        <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
                             <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
                                 {product.points_cost.toFixed(0)} <span className="text-base font-sans font-normal text-gray-700">Points</span>
                             </p>
-                            <button onClick={handleInitialRedeem} disabled={isRedeeming} className="bg-primary text-white font-semibold py-3 px-8 rounded-md transform hover:opacity-90 transition-opacity disabled:bg-gray-400">
-                                {isRedeeming ? "Processing..." : "Add To Cart"}
+                            {/* --- 2. APPLY THE NEW VARIABLES TO THE BUTTON --- */}
+                            <button 
+                                onClick={handleInitialRedeem} 
+                                disabled={buttonDisabled} 
+                                className={buttonClassName}
+                            >
+                                {buttonText}
                             </button>
                         </div>
                         <div className="border-t border-gray-200 pt-6">
@@ -122,13 +150,5 @@ function ProductDetailProcessor() {
                 </div>
             </main>
         </AnimatedPage>
-    );
-}
-
-export default function ProductDetailPage() {
-    return (
-        <Suspense fallback={<div className="min-h-screen bg-white text-center p-10">Initializing...</div>}>
-            <ProductDetailProcessor />
-        </Suspense>
     );
 }

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import axios from 'axios';
 import AnimatedPage from '../../components/AnimatedPage';
+import CatalogSkeleton from '../../components/CatalogSkeleton'; // 1. Import the new skeleton component
 import { ChevronLeftIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 // Reusable component for a single Product Card in the grid
@@ -91,9 +92,12 @@ export default function CatalogPage() {
         }
     }, [searchTerm, allProducts]);
 
+    // --- 2. THIS IS THE CHANGE ---
+    // Render the skeleton if auth is loading OR if we are fetching products
     if (authLoading || loading) {
-        return <div className="min-h-screen bg-white text-center p-10">Loading Catalog...</div>;
+        return <CatalogSkeleton />;
     }
+    // --- END OF CHANGE ---
 
     return (
         <AnimatedPage>

@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useModal } from '../context/ModalContext';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/solid';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { triggerHapticFeedback } from '@/utils/haptics';
+import { triggerConfetti } from '@/utils/confetti'; // Import our new confetti utility
 
 const modalVariants = {
     hidden: { opacity: 0, scale: 0.95 },
@@ -17,6 +19,7 @@ const modalVariants = {
 
 export default function ScanModal({ closeModal }) {
     const { login } = useAuth();
+    const { openWelcomeModal } = useModal(); 
     const [status, setStatus] = useState('scanning');
     
     useEffect(() => {
@@ -40,7 +43,6 @@ export default function ScanModal({ closeModal }) {
             scannerInstance.render(onScanSuccess, onScanFailure);
         }
 
-        // --- THIS IS THE CORRECTED CLEANUP FUNCTION ---
         return () => {
             if (scannerInstance && typeof scannerInstance.getState === 'function') {
                 if (scannerInstance.getState() !== 1) { // 1 is NOT_STARTED
@@ -60,17 +62,27 @@ export default function ScanModal({ closeModal }) {
                 `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/claim`,
                 { code: code }
             );
-
-            toast.success(response.data.message);
+            
+            triggerHapticFeedback();
             
             const currentToken = localStorage.getItem('authToken');
             if (currentToken) login(currentToken);
             
-            setTimeout(() => closeModal(), 1500);
+            const bonusDetails = response.data.firstScanBonus;
+            if (bonusDetails && bonusDetails.isEligible) {
+                closeModal(); 
+                openWelcomeModal(bonusDetails);
+            } else {
+                // Call the confetti utility directly!
+                triggerConfetti();
+                toast.success(response.data.message);
+                setTimeout(() => closeModal(), 1500); 
+            }
 
         } catch (err) {
             const errorMessage = err.response?.data?.message || 'Failed to claim code.';
             toast.error(errorMessage);
+            triggerHapticFeedback();
             setStatus('scanning');
         }
     };

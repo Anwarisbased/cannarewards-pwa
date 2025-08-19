@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react'; // 1. Import useEffect
+import { useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -11,36 +11,33 @@ export default function ProfilePage() {
     const { user, logout, isAuthenticated, loading } = useAuth();
     const router = useRouter();
 
-    // --- THIS IS THE FIX ---
-    // This effect runs after the component renders and whenever auth state changes.
     useEffect(() => {
-        // We wait until the initial loading is complete...
         if (!loading && !isAuthenticated) {
-            // ...and IF the user is not authenticated, THEN we redirect.
             router.push('/');
         }
-    }, [isAuthenticated, loading, router]); // Dependency array
+    }, [isAuthenticated, loading, router]);
 
-    // While loading or before the redirect happens, show a loading state.
     if (loading || !isAuthenticated) {
         return <div className="flex items-center justify-center min-h-screen">Loading Profile...</div>;
     }
 
-    // If we get past the loading check, the user is authenticated, so we render the profile.
+    // Get the user's first initial, defaulting to 'U' for User if no name is set.
+    const userInitial = user.firstName ? user.firstName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : 'U');
+
     return (
         <AnimatedPage>
-            <main className="p-4 bg-gray-100 min-h-screen">
+            <main className="p-4 bg-white min-h-screen">
                 <div className="w-full max-w-md mx-auto">
-                    {/* Header with Profile Info */}
-                    <div className="flex items-center p-4 mb-6">
-                        <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center text-2xl font-bold mr-4">
-                            {user.firstName ? user.firstName.charAt(0) : user.email.charAt(0).toUpperCase()}
+                    {/* --- 1. NEW PROFILE HEADER --- */}
+                    <div className="flex flex-col items-center p-4 mb-6 text-center">
+                        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center text-4xl font-bold text-gray-700 mb-4 border">
+                            {userInitial}
                         </div>
-                        <div>
-                            <h1 className="text-xl font-bold capitalize">{user.firstName || 'User'} {user.lastName || ''}</h1>
-                            <p className="text-sm text-gray-600">{user.email}</p>
-                        </div>
+                        <h1 className="text-2xl font-bold capitalize text-gray-900">{user.firstName || 'User'} {user.lastName || ''}</h1>
+                        <p className="text-base text-gray-500">{user.email}</p>
                     </div>
+                    {/* --- END OF NEW HEADER --- */}
+
 
                     {/* Menu List */}
                     <div className="rounded-lg shadow-sm overflow-hidden mb-4 border border-gray-200">
