@@ -4,12 +4,13 @@ import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AnimatedPage from '../../components/AnimatedPage';
+import MyPointsSkeleton from '../../components/MyPointsSkeleton';
+import AnimatedProgressBar from '../../components/AnimatedProgressBar'; // Import new component
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { useEffect } from 'react';
 import { ChevronRightIcon } from '@heroicons/react/24/solid';
 import PullToRefresh from 'react-pull-to-refresh';
 
-// Reusable AnimatedCounter Component
 function AnimatedCounter({ value }) {
     const motionValue = useMotionValue(value);
     const rounded = useTransform(motionValue, (latest) => Math.round(latest));
@@ -31,16 +32,15 @@ export default function MyPointsPage() {
         }
         return Promise.resolve();
     };
-
+    
     if (loading || !user) {
-        return <div className="min-h-screen bg-white"></div>;
+        return <MyPointsSkeleton />;
     }
     if (!isAuthenticated) {
         router.push('/');
         return null;
     }
 
-    // --- 1. LOGIC TO CALCULATE NEXT RANK PROGRESS ---
     const sortedRanks = user.allRanks 
         ? Object.values(user.allRanks).sort((a, b) => a.points - b.points)
         : [];
@@ -64,8 +64,6 @@ export default function MyPointsPage() {
         progressPercentage = (pointsInCurrentTier / pointsForNextTier) * 100;
         pointsNeeded = nextRank.points - user.lifetimePoints;
     }
-    // --- END OF LOGIC ---
-
 
     return (
         <AnimatedPage>
@@ -88,18 +86,13 @@ export default function MyPointsPage() {
                             </div>
                         </motion.div>
 
-                        {/* --- 2. RENDER THE PROGRESS BAR UI --- */}
                         {nextRank ? (
                             <div className="border border-gray-200 rounded-lg p-4 text-center mb-6">
                                 <p className="text-sm text-gray-600 mb-2">
                                     You are <span className="font-bold text-primary">{pointsNeeded.toLocaleString()}</span> points away from {nextRank.name}!
                                 </p>
-                                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                    <div 
-                                        className="bg-primary h-2.5 rounded-full transition-all duration-500" 
-                                        style={{ width: `${progressPercentage}%` }}
-                                    ></div>
-                                </div>
+                                {/* Use the animated progress bar */}
+                                <AnimatedProgressBar progress={progressPercentage} barColor="bg-primary" />
                             </div>
                         ) : (
                             <div className="border border-gray-200 rounded-lg p-4 text-center mb-6">
@@ -107,13 +100,10 @@ export default function MyPointsPage() {
                             </div>
                         )}
 
-
-                        {/* Referrals Banner */}
                         <div className="border border-gray-200 rounded-lg p-3 text-center mb-6">
                             <p className="font-semibold text-gray-800">{user.settings?.referralBannerText || 'Earn More!'}</p>
                         </div>
 
-                        {/* "My Points" & "How to Earn" Section */}
                         <div className="flex justify-between items-center mb-8 px-2">
                             <div>
                                 <p className="text-gray-500 text-sm">My Points</p>
@@ -129,7 +119,6 @@ export default function MyPointsPage() {
                             </Link>
                         </div>
 
-                        {/* "Rewards For You" Section */}
                         <div className="mb-6">
                             <div className="flex justify-between items-center mb-2 px-2">
                                 <h2 className="font-bold text-lg text-gray-900">Rewards For You</h2>

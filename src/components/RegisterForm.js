@@ -5,6 +5,7 @@ import api from '../utils/axiosConfig';
 import { useAuth } from '../context/AuthContext';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import zxcvbn from 'zxcvbn';
+import AnimatedProgressBar from './AnimatedProgressBar';
 
 export default function RegisterForm({ onSwitchToLogin }) {
   const [firstName, setFirstName] = useState('');
@@ -19,16 +20,19 @@ export default function RegisterForm({ onSwitchToLogin }) {
   const [error, setError] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   
-  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: '' });
 
   const { login } = useAuth();
 
   useEffect(() => {
     if (password) {
       const result = zxcvbn(password);
-      setPasswordStrength(result.score);
+      setPasswordStrength({
+        score: result.score,
+        feedback: result.feedback?.warning || ''
+      });
     } else {
-      setPasswordStrength(0);
+      setPasswordStrength({ score: 0, feedback: '' });
     }
   }, [password]);
 
@@ -80,20 +84,18 @@ export default function RegisterForm({ onSwitchToLogin }) {
     }
   };
   
-  // --- THIS IS THE CORRECTED LOGIC ---
   const getStrengthIndicator = () => {
-      switch (passwordStrength) {
-          case 0: return { width: '0%', barColor: 'bg-gray-200', textColor: 'text-gray-400', label: '' };
-          case 1: return { width: '25%', barColor: 'bg-red-500', textColor: 'text-red-500', label: 'Weak' };
-          case 2: return { width: '50%', barColor: 'bg-yellow-500', textColor: 'text-yellow-500', label: 'Fair' };
-          case 3: return { width: '75%', barColor: 'bg-blue-500', textColor: 'text-blue-500', label: 'Good' };
-          case 4: return { width: '100%', barColor: 'bg-green-500', textColor: 'text-green-500', label: 'Strong' };
-          default: return { width: '0%', barColor: 'bg-gray-200', textColor: 'text-gray-400', label: '' };
+      switch (passwordStrength.score) {
+          case 0: return { progress: 0, barColor: 'bg-gray-200', textColor: 'text-gray-400', label: '' };
+          case 1: return { progress: 25, barColor: 'bg-red-500', textColor: 'text-red-500', label: 'Weak' };
+          case 2: return { progress: 50, barColor: 'bg-yellow-500', textColor: 'text-yellow-500', label: 'Fair' };
+          case 3: return { progress: 75, barColor: 'bg-blue-500', textColor: 'text-blue-500', label: 'Good' };
+          case 4: return { progress: 100, barColor: 'bg-green-500', textColor: 'text-green-500', label: 'Strong' };
+          default: return { progress: 0, barColor: 'bg-gray-200', textColor: 'text-gray-400', label: '' };
       }
   };
   
-  const { width, barColor, textColor, label } = getStrengthIndicator();
-  // --- END OF CORRECTION ---
+  const { progress, barColor, textColor, label } = getStrengthIndicator();
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-8 bg-white rounded-lg shadow-md max-w-sm w-full">
@@ -128,11 +130,14 @@ export default function RegisterForm({ onSwitchToLogin }) {
         
         {password.length > 0 && (
             <div className="mt-2">
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                    <div className={`h-1.5 rounded-full transition-all duration-300 ${barColor}`} style={{ width: width }}></div>
+                <AnimatedProgressBar progress={progress} barColor={barColor} />
+                <div className="flex justify-between items-center">
+                    {/* --- THIS IS THE CORRECTED CODE --- */}
+                    <p className={`text-xs mt-1 ${textColor}`}>
+                        {passwordStrength.feedback}
+                    </p>
+                    <p className={`text-xs mt-1 font-medium ${textColor}`}>{label}</p>
                 </div>
-                {/* --- THIS IS THE CORRECTED RENDER LOGIC --- */}
-                <p className={`text-right text-xs mt-1 font-medium ${textColor}`}>{label}</p>
             </div>
         )}
       </div>

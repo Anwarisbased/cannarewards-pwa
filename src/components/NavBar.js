@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-// We no longer need useModal here
 import { useTransitionDirection } from '../context/TransitionContext';
 import { motion } from 'framer-motion';
+import { triggerHapticFeedback } from '@/utils/haptics'; // 1. Import haptics
 import { 
     HomeIcon as HomeOutline, 
     CircleStackIcon as CatalogOutline, 
@@ -22,15 +22,19 @@ import {
 function NavItem({ href, label, IconOutline, IconSolid }) {
     const pathname = usePathname();
     const { setDirection } = useTransitionDirection();
-    // More robust check for active state, includes child routes
     const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
     const Icon = isActive ? IconSolid : IconOutline;
     const textStyle = isActive ? 'text-primary font-semibold' : 'text-gray-500';
 
+    const handleClick = () => {
+        setDirection('right');
+        triggerHapticFeedback(); // 2. Trigger feedback on click
+    };
+
     return (
         <Link 
             href={href} 
-            onClick={() => setDirection('right')}
+            onClick={handleClick} // 3. Use the new handler
             className={`flex-1 flex flex-col items-center justify-center p-2 hover:bg-gray-100 transition-colors ${textStyle}`}
         >
             <motion.div whileTap={{ scale: 0.9 }} className="text-center">
@@ -40,7 +44,6 @@ function NavItem({ href, label, IconOutline, IconSolid }) {
         </Link>
     );
 }
-
 
 export default function NavBar() {
     const { isAuthenticated } = useAuth();
@@ -53,8 +56,6 @@ export default function NavBar() {
             <div className="flex justify-around max-w-md mx-auto h-16">
                 <NavItem href="/" label="Home" IconOutline={HomeOutline} IconSolid={HomeSolid} />
                 <NavItem href="/catalog" label="Catalog" IconOutline={CatalogOutline} IconSolid={CatalogSolid} />
-                {/* --- THIS IS THE CHANGE --- */}
-                {/* The Scan button is now a standard NavItem linking to the /scan page */}
                 <NavItem href="/scan" label="Scan" IconOutline={ScanOutline} IconSolid={ScanSolid} />
                 <NavItem href="/my-points" label="My Points" IconOutline={RewardsOutline} IconSolid={RewardsSolid} />
             </div>
