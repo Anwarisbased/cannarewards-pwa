@@ -11,42 +11,18 @@ import DynamicHeader from '../../components/DynamicHeader';
 import ImageWithLoader from '../../components/ImageWithLoader';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
-import PullToRefresh from 'react-pull-to-refresh';
+import dynamic from 'next/dynamic'; // Import dynamic
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.07
-    }
-  }
-};
+// Dynamically import PullToRefresh with ssr: false
+const PullToRefresh = dynamic(() => import('react-pull-to-refresh'), {
+  ssr: false
+});
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: {
-        type: 'spring',
-        stiffness: 100
-    }
-  }
-};
 
-const TABS = {
-    ONGOING: 'Ongoing',
-    COMPLETED: 'Completed',
-    CANCELLED: 'Cancelled',
-};
-
-const STATUS_MAP = {
-    [TABS.ONGOING]: ['Processing'],
-    [TABS.COMPLETED]: ['Completed'],
-    [TABS.CANCELLED]: ['Cancelled', 'Failed', 'Refunded'],
-};
-
+const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.07 } } };
+const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } } };
+const TABS = { ONGOING: 'Ongoing', COMPLETED: 'Completed', CANCELLED: 'Cancelled' };
+const STATUS_MAP = { [TABS.ONGOING]: ['Processing'], [TABS.COMPLETED]: ['Completed'], [TABS.CANCELLED]: ['Cancelled', 'Failed', 'Refunded'] };
 
 export default function OrdersPage() {
     const { isAuthenticated, loading: authLoading } = useAuth();
@@ -60,9 +36,7 @@ export default function OrdersPage() {
         try {
             const response = await api.get(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/my-orders`);
             setAllOrders(response.data);
-        } catch (err) {
-            console.error("Failed to fetch orders:", err);
-        }
+        } catch (err) { console.error("Failed to fetch orders:", err); }
     }, []);
 
     useEffect(() => {
@@ -71,34 +45,20 @@ export default function OrdersPage() {
         setFilteredOrders(filtered);
     }, [activeTab, allOrders]);
 
-
     useEffect(() => {
-        if (!authLoading && !isAuthenticated) {
-            router.push('/');
-            return;
-        }
-        if (isAuthenticated) {
-            setLoading(true);
-            fetchOrders().finally(() => setLoading(false));
-        }
+        if (!authLoading && !isAuthenticated) { router.push('/'); return; }
+        if (isAuthenticated) { setLoading(true); fetchOrders().finally(() => setLoading(false)); }
     }, [isAuthenticated, authLoading, router, fetchOrders]);
 
-    const handleRefresh = async () => {
-        await fetchOrders();
-        return Promise.resolve();
-    };
+    const handleRefresh = async () => { await fetchOrders(); return Promise.resolve(); };
 
-    if (authLoading || loading) {
-        return <div className="text-center p-10">Loading your orders...</div>;
-    }
+    if (authLoading || loading) { return <div className="text-center p-10">Loading your orders...</div>; }
 
     return (
         <AnimatedPage>
             <PullToRefresh onRefresh={handleRefresh}>
-                {/* 1. Use a standard main tag here, not the one inside the scrollable area */}
                 <main className="bg-white min-h-screen">
                     <div className="w-full max-w-md mx-auto">
-                        {/* --- 2. STICKY HEADER WRAPPER --- */}
                         <div className="sticky top-0 z-10 bg-white pt-4 px-4 border-b border-gray-200">
                             <DynamicHeader title="My Orders" />
                             <div className="flex justify-between items-center bg-gray-100 rounded-lg p-1 mb-4">
@@ -106,41 +66,19 @@ export default function OrdersPage() {
                                     <button
                                         key={tabName}
                                         onClick={() => setActiveTab(tabName)}
-                                        className={`w-full py-2 text-sm font-semibold rounded-md transition-colors ${
-                                            activeTab === tabName
-                                                ? 'bg-white text-gray-800 shadow'
-                                                : 'bg-transparent text-gray-500 hover:bg-gray-200'
-                                        }`}
-                                    >
-                                        {tabName}
-                                    </button>
+                                        className={`w-full py-2 text-sm font-semibold rounded-md transition-colors ${activeTab === tabName ? 'bg-white text-gray-800 shadow' : 'bg-transparent text-gray-500 hover:bg-gray-200'}`}
+                                    >{tabName}</button>
                                 ))}
                             </div>
                         </div>
-
-                        {/* --- 3. SCROLLABLE CONTENT AREA --- */}
                         <div className="p-4">
                             {filteredOrders.length > 0 ? (
-                                <motion.div 
-                                    className="space-y-4"
-                                    variants={containerVariants}
-                                    initial="hidden"
-                                    animate="visible"
-                                    key={activeTab} 
-                                >
+                                <motion.div className="space-y-4" variants={containerVariants} initial="hidden" animate="visible" key={activeTab}>
                                     {filteredOrders.map(order => (
-                                        <motion.div 
-                                            key={order.orderId} 
-                                            className="bg-white p-4 rounded-lg shadow border border-gray-100"
-                                            variants={itemVariants}
-                                        >
+                                        <motion.div key={order.orderId} className="bg-white p-4 rounded-lg shadow border border-gray-100" variants={itemVariants}>
                                             <div className="flex items-center space-x-4">
                                                 <div className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                                                    <ImageWithLoader
-                                                        src={order.imageUrl}
-                                                        alt={order.items}
-                                                        className="w-full h-full object-cover"
-                                                    />
+                                                    <ImageWithLoader src={order.imageUrl} alt={order.items} className="w-full h-full object-cover" />
                                                 </div>
                                                 <div className="flex-grow">
                                                     <div className="flex justify-between items-start">
@@ -161,6 +99,8 @@ export default function OrdersPage() {
                                     Icon={ShoppingCartIcon}
                                     title={`No ${activeTab.toLowerCase()} orders`}
                                     message="Your orders will appear here once their status changes."
+                                    buttonLabel="Browse Rewards"
+                                    buttonHref="/catalog"
                                 />
                             )}
                         </div>

@@ -1,0 +1,11 @@
+# See https://www.robotstxt.org/robotstxt.html for documentation on how to use the robots.txt file
+#
+# Allow all friendly web crawlers to access all content
+User-agent: *
+Disallow:
+
+# You could disallow specific pages if needed in the future, for example:
+# Disallow: /profile/
+# Disallow: /orders/
+
+Sitemap: /sitemap.xml

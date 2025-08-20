@@ -1,6 +1,6 @@
-@import "tailwindcss";
+/* This is the correct way to include Tailwind's base styles in a Next.js app */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* You can add custom utility classes or overrides here */
-.has-error {
-  @apply border-red-500;
-}
+/* You can add custom utility classes or overrides here if needed */

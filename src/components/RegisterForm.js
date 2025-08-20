@@ -79,7 +79,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Registration failed. An unknown error occurred.';
       setError(errorMessage);
-      console.warn("Registration failed:", err.response ? JSON.stringify(err.response.data) : err.message);
+      // console.warn removed
       setLoading(false);
     }
   };
@@ -132,7 +132,6 @@ export default function RegisterForm({ onSwitchToLogin }) {
             <div className="mt-2">
                 <AnimatedProgressBar progress={progress} barColor={barColor} />
                 <div className="flex justify-between items-center">
-                    {/* --- THIS IS THE CORRECTED CODE --- */}
                     <p className={`text-xs mt-1 ${textColor}`}>
                         {passwordStrength.feedback}
                     </p>

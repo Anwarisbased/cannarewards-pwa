@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import api from '../utils/axiosConfig'; // Use our new axios instance
+import api from '../utils/axiosConfig';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
@@ -37,7 +37,7 @@ export default function LoginForm({ onSwitchToRegister }) {
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Login failed. Please check your credentials.';
       setError(errorMessage);
-      console.warn('Login Failed:', err.response ? JSON.stringify(err.response.data) : err.message);
+      // console.warn removed
       setLoading(false);
     }
   };
