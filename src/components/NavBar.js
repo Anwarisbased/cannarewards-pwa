@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
-import { triggerHapticFeedback } from '@/utils/haptics';
+import { triggerHapticFeedback } from '@/utils/haptics'; // --- 1. Import haptics ---
 import { HomeIcon as HomeOutline, CircleStackIcon as CatalogOutline, QrCodeIcon as ScanOutline, TrophyIcon as RewardsOutline } from '@heroicons/react/24/outline';
 import { HomeIcon as HomeSolid, CircleStackIcon as CatalogSolid, QrCodeIcon as ScanSolid, TrophyIcon as RewardsSolid } from '@heroicons/react/24/solid';
 
@@ -17,7 +17,7 @@ function NavItem({ href, label, IconOutline, IconSolid }) {
     return (
         <Link 
             href={href} 
-            onClick={triggerHapticFeedback}
+            onClick={triggerHapticFeedback} // --- 2. Add onClick to the Link ---
             className={`flex-1 flex flex-col items-center justify-center p-2 hover:bg-gray-100 transition-colors ${textStyle}`}
         >
             <motion.div whileTap={{ scale: 0.9 }} className="text-center">

@@ -7,9 +7,9 @@ import Link from 'next/link';
 import api from '../../utils/axiosConfig';
 import AnimatedPage from '../../components/AnimatedPage';
 import CatalogSkeleton from '../../components/CatalogSkeleton';
-import DynamicHeader from '../../components/DynamicHeader';
-import ImageWithLoader from '../../components/ImageWithLoader'; // 1. Import the new component
+import ImageWithLoader from '../../components/ImageWithLoader';
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import PageContainer from '../../components/PageContainer'; // --- 1. Import PageContainer ---
 
 function ProductCard({ product }) {
     const imageUrl = product.images && product.images[0] ? product.images[0].src : 'https://via.placeholder.com/150';
@@ -18,7 +18,6 @@ function ProductCard({ product }) {
         <Link href={`/catalog/${product.id}`} className="block group">
             <div className="space-y-2">
                 <div className="relative w-full aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                    {/* 2. Use the ImageWithLoader component */}
                     <ImageWithLoader 
                         src={imageUrl} 
                         alt={product.name} 
@@ -101,42 +100,40 @@ export default function CatalogPage() {
 
     return (
         <AnimatedPage>
-            <main className="p-4 bg-white min-h-screen">
-                <div className="w-full max-w-md mx-auto">
-                    <DynamicHeader title="Shop" />
-                    
-                    <div className="relative mb-6">
-                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <input 
-                            type="text"
-                            placeholder="Search for rewards"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-gray-100 border-none rounded-lg py-3 pl-10 pr-10" 
+            {/* --- 2. Replace <main> with <PageContainer> --- */}
+            <PageContainer>
+                {/* Note: The DynamicHeader was removed as the global header is now always visible here */}
+                <div className="relative mb-6">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input 
+                        type="text"
+                        placeholder="Search for rewards"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full bg-gray-100 border-none rounded-lg py-3 pl-10 pr-10" 
+                    />
+                    {searchTerm && (
+                        <XMarkIcon 
+                            className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 cursor-pointer" 
+                            onClick={() => setSearchTerm('')}
                         />
-                        {searchTerm && (
-                            <XMarkIcon 
-                                className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 cursor-pointer" 
-                                onClick={() => setSearchTerm('')}
-                            />
-                        )}
-                    </div>
-                    
-                    {error && <p className="text-red-500 text-center">{error}</p>}
-                    
-                    {!error && filteredProducts.length === 0 && (
-                        <p className="text-center text-gray-500 mt-8">
-                            {searchTerm ? `No rewards found for "${searchTerm}"` : "No rewards available yet."}
-                        </p>
                     )}
-
-                    <div className="grid grid-cols-2 gap-4">
-                        {filteredProducts.map(product => (
-                            <ProductCard key={product.id} product={product} />
-                        ))}
-                    </div>
                 </div>
-            </main>
+                
+                {error && <p className="text-red-500 text-center">{error}</p>}
+                
+                {!error && filteredProducts.length === 0 && (
+                    <p className="text-center text-gray-500 mt-8">
+                        {searchTerm ? `No rewards found for "${searchTerm}"` : "No rewards available yet."}
+                    </p>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                    {filteredProducts.map(product => (
+                        <ProductCard key={product.id} product={product} />
+                    ))}
+                </div>
+            </PageContainer>
         </AnimatedPage>
     );
 }

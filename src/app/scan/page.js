@@ -7,11 +7,11 @@ import { useModal } from '../../context/ModalContext';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import api from '../../utils/axiosConfig';
 import AnimatedPage from '../../components/AnimatedPage';
-import DynamicHeader from '../../components/DynamicHeader';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast'; // Keep the original toast for simple messages
-import { showToast } from '../../components/CustomToast'; // Import our new helper
+import toast from 'react-hot-toast';
+import { showToast } from '../../components/CustomToast';
 import { triggerHapticFeedback } from '@/utils/haptics';
+import PageContainer from '../../components/PageContainer'; // --- 1. Import PageContainer ---
 
 export default function ScanPage() {
     const { login } = useAuth();
@@ -83,13 +83,11 @@ export default function ScanPage() {
                 setTimeout(() => openWelcomeModal(bonusDetails), 500);
             } else {
                 triggerConfetti();
-                // We use a simple toast here, but could use the custom one
                 toast.success(response.data.message);
                 router.push('/');
             }
         } catch (err) {
             const errorMessage = err.response?.data?.message || 'Failed to claim code.';
-            // Use our new custom error toast
             showToast('error', 'Scan Failed', errorMessage);
             triggerHapticFeedback();
             window.location.reload();
@@ -98,25 +96,23 @@ export default function ScanPage() {
 
     return (
         <AnimatedPage>
-            <main className="p-4 bg-white min-h-screen">
-                <div className="w-full max-w-md mx-auto">
-                    <DynamicHeader title="Scan & Claim" />
-                    
-                    <div id="scanner-region" className="w-full"></div>
+            {/* --- 2. Replace <main> with <PageContainer> --- */}
+            <PageContainer>
+                {/* Note: The DynamicHeader was removed as the global header is now always visible here */}
+                <div id="scanner-region" className="w-full"></div>
 
-                    {status === 'processing' && (
-                        <div className="flex flex-col items-center justify-center mt-4">
-                            <ArrowPathIcon className="animate-spin text-primary h-12 w-12" />
-                            <p className="mt-4 text-lg text-gray-700">Validating your code...</p>
-                        </div>
-                    )}
-                    {status === 'error' && (
-                        <div className="text-center text-red-500 mt-4">
-                            <p>Could not start the scanner. Please check your camera permissions and refresh the page.</p>
-                        </div>
-                    )}
-                </div>
-            </main>
+                {status === 'processing' && (
+                    <div className="flex flex-col items-center justify-center mt-4">
+                        <ArrowPathIcon className="animate-spin text-primary h-12 w-12" />
+                        <p className="mt-4 text-lg text-gray-700">Validating your code...</p>
+                    </div>
+                )}
+                {status === 'error' && (
+                    <div className="text-center text-red-500 mt-4">
+                        <p>Could not start the scanner. Please check your camera permissions and refresh the page.</p>
+                    </div>
+                )}
+            </PageContainer>
         </AnimatedPage>
     );
 }

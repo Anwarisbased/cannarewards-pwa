@@ -1,13 +1,18 @@
+// src/components/RegisterForm.js
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import api from '../utils/axiosConfig';
 import { useAuth } from '../context/AuthContext';
+import { useRouter } from 'next/navigation'; // --- NEW: Import useRouter ---
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import zxcvbn from 'zxcvbn';
 import AnimatedProgressBar from './AnimatedProgressBar';
+import ImageWithLoader from './ImageWithLoader'; // --- NEW: Import ImageWithLoader ---
 
-export default function RegisterForm({ onSwitchToLogin }) {
+// --- NEW: Added 'claimCode' and 'rewardPreview' props with null defaults ---
+export default function RegisterForm({ onSwitchToLogin, claimCode = null, rewardPreview = null }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -23,6 +28,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: '' });
 
   const { login } = useAuth();
+  const router = useRouter(); // --- NEW: Initialize useRouter ---
 
   useEffect(() => {
     if (password) {
@@ -47,39 +53,50 @@ export default function RegisterForm({ onSwitchToLogin }) {
     setError('');
 
     try {
+      // --- MODIFIED: Create a payload object ---
+      const registrationPayload = {
+        username: email,
+        email: email,
+        password: password,
+        firstName: firstName,
+        lastName: lastName,
+        phone: phone,
+        agreedToMarketing: agreedToMarketing,
+      };
+
+      // --- MODIFIED: Conditionally add the claimCode to the payload ---
+      if (claimCode) {
+        registrationPayload.code = claimCode;
+      }
+      
+      // --- MODIFIED: Send the dynamic payload ---
       await api.post(
         `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/register`,
-        {
-          username: email,
-          email: email,
-          password: password,
-          firstName: firstName,
-          lastName: lastName,
-          phone: phone,
-          agreedToMarketing: agreedToMarketing,
-        },
-        {
-          headers: { 'Content-Type': 'application/json' }
-        }
+        registrationPayload,
+        { headers: { 'Content-Type': 'application/json' } }
       );
 
+      // Login process remains the same
       const loginResponse = await api.post(
         `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/login`,
-        {
-          email: email,
-          password: password
-        },
-        {
-          headers: { 'Content-Type': 'application/json' }
-        }
+        { email: email, password: password },
+        { headers: { 'Content-Type': 'application/json' } }
       );
       
       login(loginResponse.data.token);
 
+      // --- NEW: Smart redirection after login ---
+      if (rewardPreview && rewardPreview.productId) {
+        // If this was the scan-first flow, redirect to the product page with the special flag
+        router.push(`/catalog/${rewardPreview.productId}?first_scan=true`);
+      } else {
+        // Otherwise, perform the standard redirect to the dashboard
+        router.push('/');
+      }
+
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Registration failed. An unknown error occurred.';
       setError(errorMessage);
-      // console.warn removed
       setLoading(false);
     }
   };
@@ -97,8 +114,27 @@ export default function RegisterForm({ onSwitchToLogin }) {
   
   const { progress, barColor, textColor, label } = getStrengthIndicator();
 
+  // --- MODIFIED: The form's container is slightly different for the claim flow ---
+  const formContainerClass = claimCode 
+    ? "w-full" // In claim flow, the parent container in ClaimPage handles padding/styling
+    : "space-y-4 p-8 bg-white rounded-lg shadow-md max-w-sm w-full"; // Standard styling on home page
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-8 bg-white rounded-lg shadow-md max-w-sm w-full">
+    <form onSubmit={handleSubmit} className={formContainerClass}>
+      
+      {/* --- NEW: Conditionally render the reward preview --- */}
+      {rewardPreview && (
+        <div className="text-center mb-6">
+          <div className="bg-white p-4 rounded-lg shadow-inner border max-w-[250px] mx-auto">
+            <div className="w-full aspect-square bg-gray-100 rounded-lg overflow-hidden mb-3">
+              <ImageWithLoader src={rewardPreview.image} alt={rewardPreview.name} className="w-full h-full object-cover" />
+            </div>
+            <p className="text-xs text-gray-500">YOUR WELCOME REWARD</p>
+            <p className="text-lg font-semibold text-gray-900">{rewardPreview.name}</p>
+          </div>
+        </div>
+      )}
+
       <h2 className="text-2xl font-bold text-center">Create Account</h2>
       
       {error && <p className="text-red-500 text-sm text-center p-2 bg-red-100 rounded">{error}</p>}
@@ -155,20 +191,23 @@ export default function RegisterForm({ onSwitchToLogin }) {
       </div>
       
       <button type="submit" disabled={loading} className="w-full py-2 px-4 bg-primary hover:opacity-90 text-white font-semibold rounded-lg disabled:bg-gray-400">
-        {loading ? 'Creating Account...' : 'Sign Up'}
+        {loading ? 'Creating Account...' : 'Sign Up & Claim Reward'}
       </button>
 
-      <p className="text-center text-sm text-gray-600 pt-4">
-        Already have an account?{' '}
-        <button 
-          type="button" 
-          onClick={onSwitchToLogin} 
-          className="font-medium text-primary hover:opacity-90 underline"
-          disabled={loading}
-        >
-          Log In
-        </button>
-      </p>
+      {/* --- MODIFIED: Hide the 'Switch to Login' button when in the claim flow --- */}
+      {!claimCode && (
+        <p className="text-center text-sm text-gray-600 pt-4">
+          Already have an account?{' '}
+          <button 
+            type="button" 
+            onClick={onSwitchToLogin} 
+            className="font-medium text-primary hover:opacity-90 underline"
+            disabled={loading}
+          >
+            Log In
+          </button>
+        </p>
+      )}
     </form>
   );
 }

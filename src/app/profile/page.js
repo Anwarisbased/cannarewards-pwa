@@ -3,10 +3,9 @@
 import { useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import AnimatedPage from '../../components/AnimatedPage';
 import MenuItem from '../../components/MenuItem';
-import { motion } from 'framer-motion'; // 1. Import motion
+import { motion } from 'framer-motion';
+import AnimatedPage from '../../components/AnimatedPage'; // --- ADD THIS IMPORT BACK ---
 
 export default function ProfilePage() {
     const { user, logout, isAuthenticated, loading } = useAuth();
@@ -19,7 +18,7 @@ export default function ProfilePage() {
     }, [isAuthenticated, loading, router]);
 
     if (loading || !isAuthenticated) {
-        // We'll show a simple skeleton for the profile page
+        // Skeleton remains the same
         return (
             <main className="p-4 bg-white min-h-screen animate-pulse">
                 <div className="w-full max-w-md mx-auto">
@@ -40,9 +39,15 @@ export default function ProfilePage() {
 
     return (
         <AnimatedPage>
-            <main className="p-4 bg-white min-h-screen">
-                <div className="w-full max-w-md mx-auto">
-                    {/* --- 2. WRAP HEADER IN MOTION.DIV --- */}
+            {/* The global header is hidden on this page, so we only need padding for the nav bar */}
+            <main 
+              className="p-4 bg-white min-h-screen"
+              style={{
+                paddingTop: `env(safe-area-inset-top)`,
+                paddingBottom: `calc(4rem + env(safe-area-inset-bottom))`
+              }}
+            >
+              <div className="w-full max-w-md mx-auto">
                     <motion.div 
                         className="flex flex-col items-center p-4 mb-6 text-center"
                         initial={{ opacity: 0, y: -10 }}

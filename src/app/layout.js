@@ -6,7 +6,7 @@ import { ModalProvider } from '../context/ModalContext';
 import { ThemeProvider } from '../context/ThemeContext';
 import NavBar from '../components/NavBar';
 import Header from '../components/Header';
-import { Toaster } from 'react-hot-toast'; // Toaster is still the container
+import { Toaster } from 'react-hot-toast';
 import 'nprogress/nprogress.css';
 import './globals.css';
 
@@ -23,20 +23,38 @@ const nProgressStyle = `
 `;
 
 export default function RootLayout({ children }) {
+  const themeColor = '#2563eb'; // Default theme color
 
   return (
     <html lang="en">
       <head>
+        <meta name="application-name" content="CannaRewards" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="CannaRewards" />
+        <meta name="description" content="Scan products, earn points, and redeem exclusive rewards." />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="msapplication-config" content="/icons/browserconfig.xml" />
+        <meta name="msapplication-TileColor" content={themeColor} />
+        <meta name="msapplication-tap-highlight" content="no" />
+        <meta name="theme-color" content={themeColor} />
+        <meta
+          name="viewport"
+          content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, user-scalable=no, viewport-fit=cover"
+        />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <link rel="shortcut icon" href="/favicon.ico" />
         <style>{nProgressStyle}</style>
       </head>
       <body 
-        className={`${inter.className} pt-20 pb-20 bg-gray-50`} 
+        className={`${inter.className} bg-gray-50`} 
         suppressHydrationWarning={true}
       >
         <AuthProvider>
           <ThemeProvider>
             <ModalProvider>
-              {/* REMOVED: All the custom toastOptions are gone, we use the default container */}
               <Toaster />
               <Header />
               <main>

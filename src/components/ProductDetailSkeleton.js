@@ -2,7 +2,7 @@ import { ChevronLeftIcon } from '@heroicons/react/24/solid';
 
 export default function ProductDetailSkeleton() {
     return (
-        <div className="p-4 bg-white min-h-screen w-full max-w-md mx-auto animate-pulse">
+        <div data-testid="product-detail-skeleton" className="p-4 bg-white min-h-screen w-full max-w-md mx-auto animate-pulse">
             {/* --- Skeleton Header --- */}
             <header className="flex items-center mb-4 h-16">
                 <div className="p-2 -ml-2 text-gray-300">

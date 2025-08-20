@@ -3,7 +3,7 @@
 import { useAuth } from '../context/AuthContext';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { triggerHapticFeedback } from '@/utils/haptics'; // 1. Import haptics
+import { triggerHapticFeedback } from '@/utils/haptics'; // --- 1. Import haptics ---
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -56,7 +56,7 @@ export default function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.6 }}
       >
-        {/* 2. Add onClick to the Link */}
+        {/* --- 2. Add onClick to the Link --- */}
         <Link href="/catalog" className="block" onClick={triggerHapticFeedback}>
           <button className="w-full bg-white text-black font-bold py-4 px-6 rounded-lg text-lg transform hover:scale-105 transition-transform">
             Shop Now
