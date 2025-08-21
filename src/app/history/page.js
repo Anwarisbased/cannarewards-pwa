@@ -3,19 +3,18 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
-import api from '../../utils/axiosConfig';
+// --- 1. IMPORT THE SERVICE ---
+import { getPointHistory } from '@/services/rewardsService';
 import AnimatedPage from '../../components/AnimatedPage';
 import EmptyState from '../../components/EmptyState';
 import DynamicHeader from '../../components/DynamicHeader';
 import { ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
-import dynamic from 'next/dynamic'; // Import dynamic
+import dynamic from 'next/dynamic';
 
-// Dynamically import PullToRefresh with ssr: false
 const PullToRefresh = dynamic(() => import('react-pull-to-refresh'), {
   ssr: false
 });
-
 
 const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.07 } } };
 const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } } };
@@ -28,29 +27,37 @@ export default function HistoryPage() {
 
     const fetchHistory = useCallback(async () => {
         try {
-            const response = await api.get(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/point-history`);
-            setHistory(response.data);
-        } catch (error) { console.error("Failed to fetch history:", error); }
+            // --- 2. USE THE SERVICE FUNCTION ---
+            const historyData = await getPointHistory();
+            setHistory(historyData);
+        } catch (error) { 
+            console.error("Failed to fetch history:", error); 
+            // Optional: You could add toast notifications for errors here
+        }
     }, []);
 
     useEffect(() => {
         if (!authLoading && !isAuthenticated) { router.push('/'); return; }
-        if (isAuthenticated) { setLoading(true); fetchHistory().finally(() => setLoading(false)); }
+        if (isAuthenticated) { 
+            setLoading(true); 
+            fetchHistory().finally(() => setLoading(false)); 
+        }
     }, [isAuthenticated, authLoading, router, fetchHistory]);
 
-    const handleRefresh = async () => { await fetchHistory(); return Promise.resolve(); };
+    const handleRefresh = async () => { await fetchHistory(); };
 
-    if (authLoading || loading) { return <div className="text-center p-10">Loading history...</div>; }
+    if (authLoading || loading) { return <div className="text-center p-10 pt-20">Loading history...</div>; }
 
+    // JSX for the page remains unchanged
     return (
         <AnimatedPage>
             <PullToRefresh onRefresh={handleRefresh}>
                 <main className="bg-white min-h-screen">
                     <div className="w-full max-w-md mx-auto">
                         <div className="sticky top-0 z-10 bg-white pt-4 px-4 border-b border-gray-200">
-                            <DynamicHeader title="Point History" />
+                            <DynamicHeader title="Point History" backLink="/profile" />
                         </div>
-                        <div className="p-4">
+                        <div className="p-4" style={{ paddingBottom: '5rem' }}>
                             {history.length > 0 ? (
                                 <motion.div className="space-y-3" variants={containerVariants} initial="hidden" animate="visible">
                                     {history.map((item, index) => (

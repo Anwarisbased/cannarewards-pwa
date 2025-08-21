@@ -30,7 +30,8 @@ export const getPointHistory = async () => {
 
 export const getMyOrders = async () => {
     try {
-        const response = await api.get(`${API_.../my-orders`);
+        // --- THIS LINE IS NOW CORRECTED ---
+        const response = await api.get(`${API_BASE}/my-orders`);
         return response.data;
     } catch (error) {
         throw new Error('Could not fetch order history.');

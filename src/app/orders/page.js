@@ -3,17 +3,16 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import api from '../../utils/axiosConfig';
+// --- 1. IMPORT THE SERVICE ---
+import { getMyOrders } from '@/services/rewardsService';
 import AnimatedPage from '../../components/AnimatedPage';
 import EmptyState from '../../components/EmptyState';
 import DynamicHeader from '../../components/DynamicHeader';
 import ImageWithLoader from '../../components/ImageWithLoader';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
-import dynamic from 'next/dynamic'; // Import dynamic
+import dynamic from 'next/dynamic';
 
-// Dynamically import PullToRefresh with ssr: false
 const PullToRefresh = dynamic(() => import('react-pull-to-refresh'), {
   ssr: false
 });
@@ -34,9 +33,12 @@ export default function OrdersPage() {
 
     const fetchOrders = useCallback(async () => {
         try {
-            const response = await api.get(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/my-orders`);
-            setAllOrders(response.data);
-        } catch (err) { console.error("Failed to fetch orders:", err); }
+            // --- 2. USE THE SERVICE FUNCTION ---
+            const orderData = await getMyOrders();
+            setAllOrders(orderData);
+        } catch (err) { 
+            console.error("Failed to fetch orders:", err); 
+        }
     }, []);
 
     useEffect(() => {
@@ -50,17 +52,18 @@ export default function OrdersPage() {
         if (isAuthenticated) { setLoading(true); fetchOrders().finally(() => setLoading(false)); }
     }, [isAuthenticated, authLoading, router, fetchOrders]);
 
-    const handleRefresh = async () => { await fetchOrders(); return Promise.resolve(); };
+    const handleRefresh = async () => { await fetchOrders(); };
 
-    if (authLoading || loading) { return <div className="text-center p-10">Loading your orders...</div>; }
+    if (authLoading || loading) { return <div className="text-center p-10 pt-20">Loading your orders...</div>; }
 
+    // JSX for the page remains unchanged
     return (
         <AnimatedPage>
             <PullToRefresh onRefresh={handleRefresh}>
                 <main className="bg-white min-h-screen">
                     <div className="w-full max-w-md mx-auto">
                         <div className="sticky top-0 z-10 bg-white pt-4 px-4 border-b border-gray-200">
-                            <DynamicHeader title="My Orders" />
+                            <DynamicHeader title="My Orders" backLink="/profile" />
                             <div className="flex justify-between items-center bg-gray-100 rounded-lg p-1 mb-4">
                                 {Object.values(TABS).map(tabName => (
                                     <button
@@ -71,7 +74,7 @@ export default function OrdersPage() {
                                 ))}
                             </div>
                         </div>
-                        <div className="p-4">
+                        <div className="p-4" style={{ paddingBottom: '5rem' }}>
                             {filteredOrders.length > 0 ? (
                                 <motion.div className="space-y-4" variants={containerVariants} initial="hidden" animate="visible" key={activeTab}>
                                     {filteredOrders.map(order => (

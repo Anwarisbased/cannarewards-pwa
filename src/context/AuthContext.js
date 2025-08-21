@@ -2,7 +2,7 @@
 
 import { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import api from '../utils/axiosConfig';
-import { getMyData } from '@/services/authService'; // We only need getMyData here now
+import { getMyData } from '@/services/authService'; // --- 1. IMPORT THE SERVICE ---
 
 const AuthContext = createContext();
 
@@ -13,6 +13,7 @@ export function AuthProvider({ children }) {
 
   const fetchUserData = useCallback(async () => {
     try {
+      // --- 2. USE THE CLEAN SERVICE FUNCTION ---
       const userData = await getMyData();
       setUser(userData);
     } catch (error) {
@@ -39,7 +40,6 @@ export function AuthProvider({ children }) {
     initializeAuth();
   }, [fetchUserData]);
 
-  // OLD login function name, but with NEW internal logic
   const login = (newToken, silent = false) => {
     localStorage.setItem('authToken', newToken);
     setToken(newToken);
@@ -60,7 +60,7 @@ export function AuthProvider({ children }) {
   const value = {
     user,
     token,
-    login, // This function name and signature has NOT changed
+    login,
     logout,
     isAuthenticated: !!user,
     loading,

@@ -4,12 +4,14 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useModal } from '@/context/ModalContext';
-import api from '@/utils/axiosConfig';
+// --- 1. IMPORT THE SERVICE FUNCTIONS ---
+import { getWelcomeRewardPreview, getReferralGift, claimRewardCode } from '@/services/rewardsService';
 import RegisterForm from '@/components/RegisterForm';
 import ImageWithLoader from '@/components/ImageWithLoader';
 
-// Component specifically for referral signups
+// Component specifically for referral signups (No changes needed here)
 function ReferralWelcome({ gift, onRegister }) {
+    // ... (JSX remains the same)
     return (
         <div className="text-center w-full max-w-sm px-4">
             <div className="mb-6">
@@ -39,8 +41,9 @@ function ReferralWelcome({ gift, onRegister }) {
 }
 
 
-// Component for scan-first signups
+// Component for scan-first signups (No changes needed here)
 function UnauthenticatedWelcome({ reward, onRegister }) {
+    // ... (JSX remains the same)
     if (!reward) {
         return (
             <div className="w-full max-w-sm text-center animate-pulse">
@@ -119,8 +122,9 @@ function ClaimProcessor() {
 
     const fetchRewardPreview = async () => {
         try {
-            const response = await api.get(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/preview-reward`);
-            setRewardPreview(response.data);
+            // --- 2. USE THE SERVICE FUNCTION ---
+            const data = await getWelcomeRewardPreview();
+            setRewardPreview(data);
         } catch (err) {
             console.error("Failed to fetch reward preview:", err);
             setStatus('error');
@@ -130,8 +134,9 @@ function ClaimProcessor() {
 
     const fetchReferralGift = async () => {
         try {
-            const response = await api.get(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/referral-gift`);
-            setReferralGift(response.data);
+            // --- 2. USE THE SERVICE FUNCTION ---
+            const data = await getReferralGift();
+            setReferralGift(data);
         } catch (err) {
             console.error("Failed to fetch referral gift:", err);
         }
@@ -139,29 +144,30 @@ function ClaimProcessor() {
 
     const claimForAuthenticatedUser = async (claimCode) => {
         try {
-            const response = await api.post(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/claim`, { code: claimCode });
+            // --- 2. USE THE SERVICE FUNCTION ---
+            const responseData = await claimRewardCode(claimCode);
             
             // Refreshes the user data in the AuthContext to get the new point total
             await login(localStorage.getItem('authToken'), true);
             setStatus('success');
             
-            const bonusDetails = response.data.firstScanBonus;
+            const bonusDetails = responseData.firstScanBonus;
             
-            // --- THIS IS THE NEW "SMART REDIRECT" LOGIC ---
             if (bonusDetails && bonusDetails.isEligible) {
-                // This was a first scan, so redirect to the special gift page
                 triggerConfetti();
                 router.push(`/catalog/${bonusDetails.rewardProductId}?first_scan=true`);
             } else {
-                // This was a normal scan, just go to the points page
                 router.push('/my-points');
             }
 
         } catch (err) {
             setStatus('error');
-            setErrorMessage(err.response?.data?.message || 'Failed to claim this code.');
+            // --- 3. SIMPLER ERROR HANDLING ---
+            setErrorMessage(err.message || 'Failed to claim this code.');
         }
     };
+    
+    // (The rest of the component's JSX remains unchanged)
     
     if (isAuthenticated && !code && status !== 'claiming') {
         return (

@@ -4,13 +4,15 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import api from '../../utils/axiosConfig';
+// --- 1. IMPORT THE SERVICE ---
+import { getProducts } from '@/services/woocommerceService';
 import AnimatedPage from '../../components/AnimatedPage';
 import CatalogSkeleton from '../../components/CatalogSkeleton';
 import ImageWithLoader from '../../components/ImageWithLoader';
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import PageContainer from '../../components/PageContainer'; // --- 1. Import PageContainer ---
+import PageContainer from '../../components/PageContainer';
 
+// ProductCard component remains unchanged
 function ProductCard({ product }) {
     const imageUrl = product.images && product.images[0] ? product.images[0].src : 'https://via.placeholder.com/150';
 
@@ -54,13 +56,10 @@ export default function CatalogPage() {
         if (isAuthenticated) {
             const fetchProducts = async () => {
                 try {
-                    const consumerKey = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY;
-                    const consumerSecret = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET;
-                    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/wc/v3/products?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`;
-
-                    const response = await api.get(apiUrl);
+                    // --- 2. USE THE CLEAN SERVICE FUNCTION ---
+                    const productsFromApi = await getProducts();
                     
-                    const formattedProducts = response.data.map(p => {
+                    const formattedProducts = productsFromApi.map(p => {
                         const pointsMeta = p.meta_data.find(meta => meta.key === 'points_cost');
                         return { 
                             id: p.id, 
@@ -74,7 +73,8 @@ export default function CatalogPage() {
                     setFilteredProducts(formattedProducts);
                 } catch (err) {
                     console.error("Failed to fetch products:", err);
-                    setError('Could not load rewards. Please try again later.');
+                    // --- 3. USE THE STANDARDIZED ERROR MESSAGE ---
+                    setError(err.message || 'Could not load rewards. Please try again later.');
                 } finally {
                     setLoading(false);
                 }
@@ -83,6 +83,7 @@ export default function CatalogPage() {
         }
     }, [isAuthenticated, authLoading, router]);
     
+    // Search logic remains unchanged
     useEffect(() => {
         if (searchTerm === '') {
             setFilteredProducts(allProducts);
@@ -97,12 +98,11 @@ export default function CatalogPage() {
     if (authLoading || loading) {
         return <CatalogSkeleton />;
     }
-
+    
+    // JSX for the page remains unchanged
     return (
         <AnimatedPage>
-            {/* --- 2. Replace <main> with <PageContainer> --- */}
             <PageContainer>
-                {/* Note: The DynamicHeader was removed as the global header is now always visible here */}
                 <div className="relative mb-6">
                     <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <input 

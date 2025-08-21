@@ -7,13 +7,14 @@ import AnimatedPage from '../../../components/AnimatedPage';
 import ShippingFormModal from '../../../components/ShippingFormModal';
 import ProductDetailSkeleton from '../../../components/ProductDetailSkeleton';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import api from '../../../utils/axiosConfig';
+import { getProductById } from '@/services/woocommerceService';
+import { redeemReward } from '@/services/rewardsService';
 import { ChevronLeftIcon } from '@heroicons/react/24/solid';
 import { showToast } from '../../../components/CustomToast';
 
 export default function ProductDetailPage() {
     const { user, login, isAuthenticated, loading: authLoading } = useAuth();
-    const { triggerConfetti } = useModal(); // CORRECTED: Use triggerConfetti
+    const { triggerConfetti } = useModal();
     const router = useRouter();
     const params = useParams();
     const searchParams = useSearchParams();
@@ -29,26 +30,35 @@ export default function ProductDetailPage() {
 
     useEffect(() => {
         if (isFirstScan) {
-            triggerConfetti(); // CORRECTED: Call the correct function
+            triggerConfetti();
         }
-    }, [isFirstScan, triggerConfetti]); // CORRECTED: Update the dependency array
+    }, [isFirstScan, triggerConfetti]);
 
     useEffect(() => {
         if (isAuthenticated && productId) {
             const fetchProduct = async () => {
                 setLoading(true);
                 try {
-                    const consumerKey = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY;
-                    const consumerSecret = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET;
-                    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/wc/v3/products/${productId}?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`;
-                    const response = await api.get(apiUrl);
-                    const pointsMeta = response.data.meta_data.find(meta => meta.key === 'points_cost');
-                    setProduct({ id: response.data.id, name: response.data.name, images: response.data.images, description: response.data.description.replace(/<[^>]*>?/gm, ''), points_cost: pointsMeta ? parseInt(pointsMeta.value) : null });
+                    const responseData = await getProductById(productId);
+                    const pointsMeta = responseData.meta_data.find(meta => meta.key === 'points_cost');
+                    setProduct({ 
+                        id: responseData.id, 
+                        name: responseData.name, 
+                        images: responseData.images, 
+                        description: responseData.description.replace(/<[^>]*>?/gm, ''), 
+                        points_cost: pointsMeta ? parseInt(pointsMeta.value) : null 
+                    });
                     setError('');
-                } catch (err) { setError('Could not load product details.'); } finally { setLoading(false); }
+                } catch (err) { 
+                    setError(err.message || 'Could not load product details.'); 
+                } finally { 
+                    setLoading(false); 
+                }
             };
             fetchProduct();
-        } else if (!authLoading && !isAuthenticated) { router.push('/'); }
+        } else if (!authLoading && !isAuthenticated) { 
+            router.push('/'); 
+        }
     }, [productId, isAuthenticated, authLoading, router]);
 
     const handleInitialRedeem = () => {
@@ -63,28 +73,29 @@ export default function ProductDetailPage() {
         setIsRedeeming(true);
         setShowShippingModal(false);
         try {
-            await api.post(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/redeem`, { productId: product.id, shippingDetails });
+            await redeemReward(product.id, shippingDetails);
             showToast('success', 'Success!', 'Your reward has been redeemed.');
+            
             const currentToken = localStorage.getItem('authToken');
-            if (currentToken) login(currentToken);
+            if (currentToken) login(currentToken, true); // Use silent login to refresh user data
+            
             router.push('/orders');
         } catch (err) { 
-            showToast('error', 'Redemption Failed', err.response?.data?.message || 'An unknown error occurred.');
+            showToast('error', 'Redemption Failed', err.message || 'An unknown error occurred.');
         } finally { 
             setIsRedeeming(false); 
         }
     };
 
     if (authLoading || loading || !productId) {
-        // Return skeleton with padding to match the final layout
         return (
             <div className="pt-20">
                 <ProductDetailSkeleton />
             </div>
         );
     }
-    if (error) { return <div className="min-h-screen bg-white text-center p-10">{error}</div>; }
-    if (!product) { return <div className="min-h-screen bg-white text-center p-10">Product not found.</div>; }
+    if (error) { return <div className="min-h-screen bg-white text-center p-10 pt-20">{error}</div>; }
+    if (!product) { return <div className="min-h-screen bg-white text-center p-10 pt-20">Product not found.</div>; }
     
     const imageUrl = product.images && product.images[0] ? product.images[0].src : 'https://via.placeholder.com/300';
     const userPoints = user ? user.points : 0;
@@ -103,8 +114,13 @@ export default function ProductDetailPage() {
 
     return (
         <AnimatedPage>
-            {showShippingModal && <ShippingFormModal onCancel={() => setShowShippingModal(false)} onSubmit={handleFinalRedeem} />}
-            {/* The main container now has top and bottom padding to account for the fixed Header and NavBar */}
+            {showShippingModal && (
+                <ShippingFormModal 
+                    onCancel={() => setShowShippingModal(false)} 
+                    onSubmit={handleFinalRedeem}
+                    currentUser={user} 
+                />
+            )}
             <main className="p-4 bg-white min-h-screen" style={{ paddingTop: '5rem', paddingBottom: '4rem' }}>
                 <div className="w-full max-w-md mx-auto">
                      <header className="flex items-center mb-4 h-16"><button onClick={() => router.back()} className="p-2 -ml-2 text-gray-700 hover:bg-gray-100 rounded-full"><ChevronLeftIcon className="h-7 w-7" /></button></header>

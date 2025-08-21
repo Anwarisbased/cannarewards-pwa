@@ -1,16 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import axios from 'axios';
-import Link from 'next/link'; // Import the Link component
+import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
+import { loginUser } from '@/services/authService'; // --- 1. IMPORT THE SERVICE ---
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { showToast } from './CustomToast'; // Using the custom toast for errors
 
 export default function LoginForm({ onSwitchToRegister }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const { login } = useAuth();
@@ -18,39 +18,29 @@ export default function LoginForm({ onSwitchToRegister }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setLoading(true);
-    setError('');
 
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/login`,
-        {
-          email: email,
-          password: password,
-        },
-        {
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
-      
-      login(response.data.token);
+      // --- 2. USE THE CLEAN SERVICE FUNCTION ---
+      const data = await loginUser(email, password);
+      login(data.token); // This still comes from AuthContext to set global state
+      // No need to setLoading(false) here, as the page will redirect.
 
     } catch (err) {
-      setError('Login failed. Please check your username and password.');
-      console.error('Login Failed:', err.response?.data || err.message);
+      // --- 3. SIMPLER ERROR HANDLING ---
+      // The service already standardizes the error message for us.
+      showToast('error', 'Login Failed', err.message);
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-8 bg-white rounded-lg shadow-md max-w-sm w-full">
-      <h2 className="text-2xl font-bold text-center">Login</h2>
+    <form onSubmit={handleSubmit} className="space-y-4 text-left">
+      <h2 className="text-2xl font-bold text-center mb-6">Login</h2>
       
-      {error && <p className="text-red-500 text-sm text-center p-2 bg-red-100 rounded">{error}</p>}
+      {/* Error messages are now handled by toasts, so the old error state is gone */}
 
       <div>
-        <label htmlFor="email-login" className="block text-sm font-medium text-gray-700 sr-only">
-          Username or Email
-        </label>
+        <label htmlFor="email-login" className="sr-only">Username or Email</label>
         <input
           type="text"
           id="email-login"
@@ -64,9 +54,7 @@ export default function LoginForm({ onSwitchToRegister }) {
       </div>
 
       <div className="relative">
-        <label htmlFor="password-login" className="block text-sm font-medium text-gray-700 sr-only">
-          Password
-        </label>
+        <label htmlFor="password-login" className="sr-only">Password</label>
         <input
           type={passwordVisible ? 'text' : 'password'}
           id="password-login"
@@ -85,17 +73,15 @@ export default function LoginForm({ onSwitchToRegister }) {
         </div>
       </div>
 
-      {/* --- THIS IS THE NEW "FORGOT PASSWORD" LINK --- */}
       <div className="text-right text-sm">
         <Link href="/forgot-password" className="font-medium text-primary hover:opacity-90 underline">
           Forgot Password?
         </Link>
       </div>
-      {/* --- END OF NEW LINK --- */}
 
       <button 
         type="submit" 
-        className="w-full py-2 px-4 bg-primary hover:opacity-90 text-white font-semibold rounded-lg disabled:bg-gray-400"
+        className="w-full py-3 px-4 bg-primary hover:opacity-90 text-white font-semibold rounded-lg disabled:bg-gray-400"
         disabled={loading}
       >
         {loading ? 'Logging in...' : 'Log In'}

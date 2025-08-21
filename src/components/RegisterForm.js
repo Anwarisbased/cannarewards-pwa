@@ -1,13 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import api from '../utils/axiosConfig';
+import api from '../utils/axiosConfig'; // This can be removed after refactor
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';
+// --- 1. IMPORT THE SERVICE FUNCTIONS ---
+import { registerUser, loginUser } from '@/services/authService';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import zxcvbn from 'zxcvbn';
 import AnimatedProgressBar from './AnimatedProgressBar';
 import ImageWithLoader from './ImageWithLoader';
+import { showToast } from './CustomToast'; // For consistent error handling
 
 export default function RegisterForm({ onSwitchToLogin, claimCode = null, rewardPreview = null }) {
   const [firstName, setFirstName] = useState('');
@@ -19,9 +22,7 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
   const [agreedToMarketing, setAgreedToMarketing] = useState(false);
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
-  
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: '' });
 
   const { login } = useAuth();
@@ -43,11 +44,10 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!agreedToTerms) {
-      setError("You must agree to the terms and conditions.");
+      showToast("error", "Terms Required", "You must agree to the terms and conditions.");
       return;
     }
     setLoading(true);
-    setError('');
 
     try {
       const registrationPayload = {
@@ -69,27 +69,19 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
         registrationPayload.code = claimCode;
       }
       
-      await api.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/register`,
-        registrationPayload,
-        { headers: { 'Content-Type': 'application/json' } }
-      );
+      // --- 2. USE THE CLEAN SERVICE FUNCTIONS ---
+      await registerUser(registrationPayload);
 
       if (storedRefCode) {
           localStorage.removeItem('referralCode');
       }
 
-      const loginResponse = await api.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/login`,
-        { email: email, password: password },
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-      
-      login(loginResponse.data.token);
+      // Automatically log the user in after successful registration
+      const loginData = await loginUser(email, password);
+      login(loginData.token); // Set global state via AuthContext
 
       if (rewardPreview && rewardPreview.productId) {
         let redirectUrl = `/catalog/${rewardPreview.productId}`;
-        // Add the special flag if it's a referral gift OR a scan-first flow.
         if (rewardPreview.isReferralGift || claimCode) {
             redirectUrl += '?first_scan=true';
         }
@@ -99,12 +91,13 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
       }
 
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Registration failed. An unknown error occurred.';
-      setError(errorMessage);
+      // --- 3. SIMPLER ERROR HANDLING ---
+      showToast('error', 'Registration Failed', err.message);
       setLoading(false);
     }
   };
   
+  // (The rest of the component's JSX and helper functions remain unchanged)
   const getStrengthIndicator = () => {
       switch (passwordStrength.score) {
           case 0: return { progress: 0, barColor: 'bg-gray-200', textColor: 'text-gray-400', label: '' };
@@ -139,8 +132,8 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
 
       <h2 className="text-2xl font-bold text-center">Create Account</h2>
       
-      {error && <p className="text-red-500 text-sm text-center p-2 bg-red-100 rounded">{error}</p>}
-      
+      {/* The old [error] state is now handled by toasts */}
+
       <div className="flex space-x-4">
         <input type="text" placeholder="First Name" autoComplete="given-name" value={firstName} onChange={e => setFirstName(e.target.value)} required className="w-1/2 mt-1 block px-3 py-2 border border-gray-300 rounded-md" />
         <input type="text" placeholder="Last Name" autoComplete="family-name" value={lastName} onChange={e => setLastName(e.target.value)} required className="w-1/2 mt-1 block px-3 py-2 border border-gray-300 rounded-md" />
