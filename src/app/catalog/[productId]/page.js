@@ -13,7 +13,7 @@ import { showToast } from '../../../components/CustomToast';
 
 export default function ProductDetailPage() {
     const { user, login, isAuthenticated, loading: authLoading } = useAuth();
-    const { triggerCelebration } = useModal();
+    const { triggerConfetti } = useModal(); // CORRECTED: Use triggerConfetti
     const router = useRouter();
     const params = useParams();
     const searchParams = useSearchParams();
@@ -29,9 +29,9 @@ export default function ProductDetailPage() {
 
     useEffect(() => {
         if (isFirstScan) {
-            triggerCelebration();
+            triggerConfetti(); // CORRECTED: Call the correct function
         }
-    }, [isFirstScan, triggerCelebration]);
+    }, [isFirstScan, triggerConfetti]); // CORRECTED: Update the dependency array
 
     useEffect(() => {
         if (isAuthenticated && productId) {

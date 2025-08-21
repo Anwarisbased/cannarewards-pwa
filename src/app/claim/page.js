@@ -1,5 +1,3 @@
-// src/app/claim/page.js
-
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
@@ -7,10 +5,41 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useModal } from '@/context/ModalContext';
 import api from '@/utils/axiosConfig';
-import RegisterForm from '@/components/RegisterForm'; // This component is now ready
+import RegisterForm from '@/components/RegisterForm';
 import ImageWithLoader from '@/components/ImageWithLoader';
 
-// This component is unchanged
+// Component specifically for referral signups
+function ReferralWelcome({ gift, onRegister }) {
+    return (
+        <div className="text-center w-full max-w-sm px-4">
+            <div className="mb-6">
+                <img src="/logo.png" alt="CannaRewards Logo" width={80} height={80} className="mx-auto" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">You've Been Invited!</h1>
+            <p className="text-gray-600 mb-6">Create an account to join and claim your free welcome gift.</p>
+            
+            {gift && (
+                <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                    <div className="w-full aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
+                        <ImageWithLoader src={gift.image} alt={gift.name} className="w-full h-full object-cover" />
+                    </div>
+                    <p className="text-xs text-gray-500">YOUR WELCOME GIFT</p>
+                    <p className="text-xl font-semibold text-gray-900">{gift.name}</p>
+                </div>
+            )}
+            
+            <button
+                onClick={onRegister}
+                className="w-full bg-primary text-white font-bold py-4 px-6 rounded-lg text-lg transform hover:scale-105 transition-transform"
+            >
+                Create Account to Claim
+            </button>
+        </div>
+    );
+}
+
+
+// Component for scan-first signups
 function UnauthenticatedWelcome({ reward, onRegister }) {
     if (!reward) {
         return (
@@ -45,24 +74,23 @@ function UnauthenticatedWelcome({ reward, onRegister }) {
 }
 
 
-// This is the main logic handler for the page
 function ClaimProcessor() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { isAuthenticated, loading: authLoading, login } = useAuth();
-    const { triggerCelebration } = useModal();
+    const { triggerConfetti } = useModal();
 
     const [status, setStatus] = useState('initializing');
     const [rewardPreview, setRewardPreview] = useState(null);
+    const [referralGift, setReferralGift] = useState(null);
     const [errorMessage, setErrorMessage] = useState('');
     
     const code = searchParams.get('code');
+    const refCode = searchParams.get('ref');
 
     useEffect(() => {
-        if (!code) {
-            setStatus('error');
-            setErrorMessage('No claim code provided in the URL.');
-            return;
+        if (refCode) {
+            localStorage.setItem('referralCode', refCode);
         }
 
         if (authLoading) {
@@ -71,14 +99,23 @@ function ClaimProcessor() {
         }
 
         if (isAuthenticated) {
-            setStatus('claiming');
-            claimForAuthenticatedUser(code);
+            if (code) {
+                setStatus('claiming');
+                claimForAuthenticatedUser(code);
+            }
         } else {
-            setStatus('unauthenticated');
-            fetchRewardPreview();
+            if (code) {
+                setStatus('unauthenticated');
+                fetchRewardPreview();
+            } else if (refCode) {
+                setStatus('unauthenticated');
+                fetchReferralGift();
+            } else {
+                setStatus('error');
+                setErrorMessage('No claim code or referral code provided in the URL.');
+            }
         }
-
-    }, [code, authLoading, isAuthenticated]);
+    }, [code, refCode, authLoading, isAuthenticated]);
 
     const fetchRewardPreview = async () => {
         try {
@@ -91,18 +128,55 @@ function ClaimProcessor() {
         }
     };
 
+    const fetchReferralGift = async () => {
+        try {
+            const response = await api.get(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/referral-gift`);
+            setReferralGift(response.data);
+        } catch (err) {
+            console.error("Failed to fetch referral gift:", err);
+        }
+    };
+
     const claimForAuthenticatedUser = async (claimCode) => {
         try {
             const response = await api.post(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/claim`, { code: claimCode });
+            
+            // Refreshes the user data in the AuthContext to get the new point total
             await login(localStorage.getItem('authToken'), true);
             setStatus('success');
-            triggerCelebration();
-            router.push('/my-points');
+            
+            const bonusDetails = response.data.firstScanBonus;
+            
+            // --- THIS IS THE NEW "SMART REDIRECT" LOGIC ---
+            if (bonusDetails && bonusDetails.isEligible) {
+                // This was a first scan, so redirect to the special gift page
+                triggerConfetti();
+                router.push(`/catalog/${bonusDetails.rewardProductId}?first_scan=true`);
+            } else {
+                // This was a normal scan, just go to the points page
+                router.push('/my-points');
+            }
+
         } catch (err) {
             setStatus('error');
             setErrorMessage(err.response?.data?.message || 'Failed to claim this code.');
         }
     };
+    
+    if (isAuthenticated && !code && status !== 'claiming') {
+        return (
+            <div className="text-center p-8 bg-white rounded-lg shadow-md">
+                <h1 className="text-2xl font-bold mb-4 text-gray-800">Invalid Page</h1>
+                <p className="text-lg text-gray-700">Please scan a product QR code to claim a reward.</p>
+                <button 
+                    onClick={() => router.push('/')}
+                    className="mt-8 py-2 px-6 bg-primary hover:opacity-90 text-white font-semibold rounded-lg"
+                >
+                    Go to Dashboard
+                </button>
+            </div>
+        );
+    }
     
     if (status === 'error') {
         return (
@@ -120,33 +194,35 @@ function ClaimProcessor() {
     }
     
     if (status === 'unauthenticated') {
-        // We pass the onRegister function to switch the status to 'registering'
+        if (refCode && !code) {
+            return <ReferralWelcome gift={referralGift} onRegister={() => setStatus('registering')} />;
+        }
         return <UnauthenticatedWelcome reward={rewardPreview} onRegister={() => setStatus('registering')} />;
     }
 
     if (status === 'registering') {
-        // --- THIS IS THE KEY CHANGE ---
-        // Replace the placeholder with our enhanced RegisterForm, passing the necessary props.
         return (
             <div className="w-full max-w-sm bg-white p-8 rounded-lg shadow-md">
                 <RegisterForm 
                     claimCode={code} 
-                    rewardPreview={rewardPreview} 
+                    rewardPreview={referralGift || rewardPreview} 
                 />
             </div>
         );
     }
 
-    // Default loading/processing state
-    return (
-        <div className="text-center p-8">
-            <h1 className="text-2xl font-bold mb-4">Processing Your Reward...</h1>
-            <p className="text-gray-600">Please wait a moment.</p>
-        </div>
-    );
+    if (status === 'initializing' || status === 'authenticating' || status === 'claiming' || status === 'success') {
+        return (
+            <div className="text-center p-8">
+                <h1 className="text-2xl font-bold mb-4">Processing...</h1>
+                <p className="text-gray-600">Please wait a moment.</p>
+            </div>
+        );
+    }
+
+    return null; 
 }
 
-// The main export is unchanged
 export default function ClaimPage() {
     return (
         <main className="flex items-center justify-center min-h-screen bg-gray-50 p-4">

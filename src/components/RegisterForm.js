@@ -1,17 +1,14 @@
-// src/components/RegisterForm.js
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import api from '../utils/axiosConfig';
 import { useAuth } from '../context/AuthContext';
-import { useRouter } from 'next/navigation'; // --- NEW: Import useRouter ---
+import { useRouter } from 'next/navigation';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import zxcvbn from 'zxcvbn';
 import AnimatedProgressBar from './AnimatedProgressBar';
-import ImageWithLoader from './ImageWithLoader'; // --- NEW: Import ImageWithLoader ---
+import ImageWithLoader from './ImageWithLoader';
 
-// --- NEW: Added 'claimCode' and 'rewardPreview' props with null defaults ---
 export default function RegisterForm({ onSwitchToLogin, claimCode = null, rewardPreview = null }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -28,7 +25,7 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: '' });
 
   const { login } = useAuth();
-  const router = useRouter(); // --- NEW: Initialize useRouter ---
+  const router = useRouter();
 
   useEffect(() => {
     if (password) {
@@ -53,7 +50,6 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
     setError('');
 
     try {
-      // --- MODIFIED: Create a payload object ---
       const registrationPayload = {
         username: email,
         email: email,
@@ -64,19 +60,25 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
         agreedToMarketing: agreedToMarketing,
       };
 
-      // --- MODIFIED: Conditionally add the claimCode to the payload ---
+      const storedRefCode = localStorage.getItem('referralCode');
+      if (storedRefCode) {
+          registrationPayload.referralCode = storedRefCode;
+      }
+      
       if (claimCode) {
         registrationPayload.code = claimCode;
       }
       
-      // --- MODIFIED: Send the dynamic payload ---
       await api.post(
         `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/register`,
         registrationPayload,
         { headers: { 'Content-Type': 'application/json' } }
       );
 
-      // Login process remains the same
+      if (storedRefCode) {
+          localStorage.removeItem('referralCode');
+      }
+
       const loginResponse = await api.post(
         `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/login`,
         { email: email, password: password },
@@ -85,12 +87,14 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
       
       login(loginResponse.data.token);
 
-      // --- NEW: Smart redirection after login ---
       if (rewardPreview && rewardPreview.productId) {
-        // If this was the scan-first flow, redirect to the product page with the special flag
-        router.push(`/catalog/${rewardPreview.productId}?first_scan=true`);
+        let redirectUrl = `/catalog/${rewardPreview.productId}`;
+        // Add the special flag if it's a referral gift OR a scan-first flow.
+        if (rewardPreview.isReferralGift || claimCode) {
+            redirectUrl += '?first_scan=true';
+        }
+        router.push(redirectUrl);
       } else {
-        // Otherwise, perform the standard redirect to the dashboard
         router.push('/');
       }
 
@@ -114,15 +118,13 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
   
   const { progress, barColor, textColor, label } = getStrengthIndicator();
 
-  // --- MODIFIED: The form's container is slightly different for the claim flow ---
-  const formContainerClass = claimCode 
-    ? "w-full" // In claim flow, the parent container in ClaimPage handles padding/styling
-    : "space-y-4 p-8 bg-white rounded-lg shadow-md max-w-sm w-full"; // Standard styling on home page
+  const formContainerClass = claimCode || rewardPreview
+    ? "w-full"
+    : "space-y-4 p-8 bg-white rounded-lg shadow-md max-w-sm w-full";
 
   return (
     <form onSubmit={handleSubmit} className={formContainerClass}>
       
-      {/* --- NEW: Conditionally render the reward preview --- */}
       {rewardPreview && (
         <div className="text-center mb-6">
           <div className="bg-white p-4 rounded-lg shadow-inner border max-w-[250px] mx-auto">
@@ -194,8 +196,7 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
         {loading ? 'Creating Account...' : 'Sign Up & Claim Reward'}
       </button>
 
-      {/* --- MODIFIED: Hide the 'Switch to Login' button when in the claim flow --- */}
-      {!claimCode && (
+      {!(claimCode || rewardPreview?.isReferralGift) && (
         <p className="text-center text-sm text-gray-600 pt-4">
           Already have an account?{' '}
           <button 

@@ -1,8 +1,10 @@
+// in src/app/my-points/page.js
+
 'use client';
 
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import Link from 'next/link'; // Make sure Link is imported
 import AnimatedPage from '../../components/AnimatedPage';
 import MyPointsSkeleton from '../../components/MyPointsSkeleton';
 import AnimatedProgressBar from '../../components/AnimatedProgressBar';
@@ -10,14 +12,15 @@ import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { useEffect } from 'react';
 import { ChevronRightIcon } from '@heroicons/react/24/solid';
 import dynamic from 'next/dynamic';
-import PageContainer from '../../components/PageContainer'; // --- NEW: Import PageContainer ---
+import PageContainer from '../../components/PageContainer';
+import { triggerHapticFeedback } from '@/utils/haptics'; // Import haptics
 
 const PullToRefresh = dynamic(() => import('react-pull-to-refresh'), {
   ssr: false
 });
 
 function AnimatedCounter({ value }) {
-    // ... (component is unchanged)
+    // ... (this component remains unchanged)
     const motionValue = useMotionValue(value);
     const rounded = useTransform(motionValue, (latest) => Math.round(latest));
     useEffect(() => {
@@ -38,7 +41,7 @@ export default function MyPointsPage() {
     if (loading || !user) { return <MyPointsSkeleton />; }
     if (!isAuthenticated) { router.push('/'); return null; }
     
-    // ... (rest of the component logic is unchanged)
+    // ... (the logic for ranks, progress, etc. remains unchanged)
     const sortedRanks = user.allRanks ? Object.values(user.allRanks).sort((a, b) => a.points - b.points) : [];
     let nextRank = null;
     let currentRankPoints = 0;
@@ -58,7 +61,6 @@ export default function MyPointsPage() {
     return (
         <AnimatedPage>
             <PullToRefresh onRefresh={handleRefresh}>
-                {/* --- MODIFIED: Use the new PageContainer component --- */}
                 <PageContainer>
                     <motion.div className="bg-white rounded-xl shadow-md p-6 mb-6 border border-gray-200" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
                         <div className="flex justify-end text-xs uppercase tracking-widest mb-4 text-gray-500"><span>{user.rank.name || 'Member'}</span></div>
@@ -79,7 +81,20 @@ export default function MyPointsPage() {
                     ) : (
                         <div className="border border-gray-200 rounded-lg p-4 text-center mb-6"><p className="font-bold text-primary">🎉 You've reached the highest rank!</p></div>
                     )}
-                    <div className="border border-gray-200 rounded-lg p-3 text-center mb-6"><p className="font-semibold text-gray-800">{user.settings?.referralBannerText || 'Earn More!'}</p></div>
+
+                    {/* --- THIS IS THE MODIFIED SECTION --- */}
+                    {user.referralCode && (
+                        <Link href="/profile/refer" onClick={triggerHapticFeedback} className="block mb-6">
+                            <div className="border border-gray-200 rounded-lg p-3 text-center bg-yellow-50 hover:bg-yellow-100 transition-colors">
+                                <p className="font-semibold text-yellow-800">
+                                    🎁 Earn More By Inviting Your Friends
+                                </p>
+                            </div>
+                        </Link>
+                    )}
+                    {/* --- END OF MODIFIED SECTION --- */}
+
+                    {/* ... (The rest of the component for "How to Earn" and "Rewards For You" remains the same) ... */}
                     <div className="flex justify-between items-center mb-8 px-2">
                         <div>
                             <p className="text-gray-500 text-sm">My Points</p>
