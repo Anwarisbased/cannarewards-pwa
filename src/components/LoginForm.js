@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import api from '../utils/axiosConfig';
-import Link from 'next/link';
+import axios from 'axios';
+import Link from 'next/link'; // Import the Link component
 import { useAuth } from '../context/AuthContext';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
@@ -21,7 +21,7 @@ export default function LoginForm({ onSwitchToRegister }) {
     setError('');
 
     try {
-      const response = await api.post(
+      const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/login`,
         {
           email: email,
@@ -35,9 +35,8 @@ export default function LoginForm({ onSwitchToRegister }) {
       login(response.data.token);
 
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Login failed. Please check your credentials.';
-      setError(errorMessage);
-      // console.warn removed
+      setError('Login failed. Please check your username and password.');
+      console.error('Login Failed:', err.response?.data || err.message);
       setLoading(false);
     }
   };
@@ -86,11 +85,13 @@ export default function LoginForm({ onSwitchToRegister }) {
         </div>
       </div>
 
+      {/* --- THIS IS THE NEW "FORGOT PASSWORD" LINK --- */}
       <div className="text-right text-sm">
         <Link href="/forgot-password" className="font-medium text-primary hover:opacity-90 underline">
           Forgot Password?
         </Link>
       </div>
+      {/* --- END OF NEW LINK --- */}
 
       <button 
         type="submit" 

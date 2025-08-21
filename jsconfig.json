@@ -4,7 +4,8 @@
     "paths": {
       "@/components/*": ["components/*"],
       "@/context/*": ["context/*"],
-      "@/utils/*": ["utils/*"]
+      "@/utils/*": ["utils/*"],
+      "@/services/*": ["services/*"] // <-- ADD THIS LINE
     }
   }
 }
