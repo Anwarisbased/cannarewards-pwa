@@ -8,7 +8,8 @@ export default function PageContainer({ children }) {
       className="p-4 bg-white min-h-screen"
       style={{
         paddingTop: `calc(5rem + env(safe-area-inset-top))`,
-        paddingBottom: `calc(4rem + env(safe-area-inset-bottom))`,
+        // UPDATED PADDING: 5rem (h-20) instead of 4rem (h-16) for the new navbar
+        paddingBottom: `calc(5rem + env(safe-area-inset-bottom))`, 
       }}
     >
       <div className="w-full max-w-md mx-auto h-full">

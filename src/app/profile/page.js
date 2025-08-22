@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import MenuItem from '../../components/MenuItem';
 import { motion } from 'framer-motion';
-import AnimatedPage from '../../components/AnimatedPage'; // --- ADD THIS IMPORT BACK ---
+import AnimatedPage from '../../components/AnimatedPage';
 
 export default function ProfilePage() {
     const { user, logout, isAuthenticated, loading } = useAuth();
@@ -18,7 +18,6 @@ export default function ProfilePage() {
     }, [isAuthenticated, loading, router]);
 
     if (loading || !isAuthenticated) {
-        // Skeleton remains the same
         return (
             <main className="p-4 bg-white min-h-screen animate-pulse">
                 <div className="w-full max-w-md mx-auto">
@@ -39,12 +38,12 @@ export default function ProfilePage() {
 
     return (
         <AnimatedPage>
-            {/* The global header is hidden on this page, so we only need padding for the nav bar */}
             <main 
               className="p-4 bg-white min-h-screen"
               style={{
                 paddingTop: `env(safe-area-inset-top)`,
-                paddingBottom: `calc(4rem + env(safe-area-inset-bottom))`
+                // UPDATED PADDING: 5rem accounts for the new h-20 navbar area
+                paddingBottom: `calc(5rem + env(safe-area-inset-bottom))` 
               }}
             >
               <div className="w-full max-w-md mx-auto">

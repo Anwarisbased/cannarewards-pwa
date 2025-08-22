@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useModal } from '../../context/ModalContext';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+// The static import of html5-qrcode is no longer needed here
 import api from '../../utils/axiosConfig';
 import AnimatedPage from '../../components/AnimatedPage';
 import PageContainer from '../../components/PageContainer';
@@ -20,20 +20,41 @@ export default function ScanPage() {
     
     const [view, setView] = useState('landing');
     const [scannerError, setScannerError] = useState('');
+    const scannerRef = useRef(null); // Ref to hold the scanner instance
 
-    const startScanner = () => {
+    // --- UPDATED: The function is now async to handle the dynamic import ---
+    const startScanner = async () => {
         triggerHapticFeedback();
         setView('scanning');
+        setScannerError(''); // Clear previous errors
 
-        setTimeout(() => {
-            const scannerRegionEl = document.getElementById("scanner-region");
-            if (!scannerRegionEl) {
-                console.error("Scanner region element not found.");
-                setScannerError("Could not initialize scanner region.");
-                return;
-            }
+        try {
+            // Dynamically import the library only when needed
+            const { Html5QrcodeScanner } = await import('html5-qrcode');
+            
+            // We still use a timeout to ensure the DOM element is ready for the scanner
+            setTimeout(() => {
+                const scannerRegionEl = document.getElementById("scanner-region");
+                if (!scannerRegionEl) {
+                    console.error("Scanner region element not found.");
+                    setScannerError("Could not initialize scanner region.");
+                    return;
+                }
 
-            try {
+                // Prevents creating multiple scanner instances
+                if (scannerRef.current) {
+                    return;
+                }
+
+                const onScanSuccess = (decodedText) => {
+                    processClaim(decodedText);
+                };
+                
+                const onScanFailure = (error) => {
+                    // This callback is often noisy, you can use it for debugging if needed
+                    // console.warn(`Code scan error = ${error}`);
+                };
+
                 const scanner = new Html5QrcodeScanner(
                     "scanner-region", 
                     { 
@@ -41,41 +62,47 @@ export default function ScanPage() {
                         qrbox: { width: 250, height: 250 },
                         showTorchButtonIfSupported: true,
                         showZoomSliderIfSupported: true,
+                        rememberLastUsedCamera: true, // Improves user experience on subsequent scans
                     },
                     false
                 );
 
-                const onScanSuccess = (decodedText) => {
-                    if (scanner && scanner.getState() !== 1) {
-                        scanner.clear().catch(error => console.error("Scanner failed to clear.", error));
-                    }
-                    setView('processing');
-                    processClaim(decodedText);
-                };
+                scanner.render(onScanSuccess, onScanFailure);
+                scannerRef.current = scanner; // Store the instance in the ref
 
-                scanner.render(onScanSuccess, () => {});
-            } catch (error) {
-                console.error("Failed to initialize scanner", error);
-                setScannerError("Camera permission may be denied. Please check your browser settings and refresh.");
-            }
-        }, 100);
+            }, 100);
+
+        } catch (error) {
+            console.error("Failed to load or initialize scanner library", error);
+            setScannerError("Could not load the scanner. Please check your connection and try again.");
+            setView('landing'); // Revert view on failure
+        }
     };
 
     const processClaim = async (urlText) => {
+        // Stop the scanner immediately after a successful scan
+        if (scannerRef.current) {
+            scannerRef.current.clear().catch(error => console.error("Scanner failed to clear.", error));
+            scannerRef.current = null;
+        }
+
+        setView('processing');
+
         try {
             const url = new URL(urlText);
             const code = url.searchParams.get('code');
             if (!code) throw new Error("Invalid QR code format.");
+            
             const response = await api.post(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/claim`, { code });
-            triggerHapticFeedback();
+            
+            triggerHapticFeedback(); // Haptic on success
             const currentToken = localStorage.getItem('authToken');
-            if (currentToken) login(currentToken);
+            if (currentToken) await login(currentToken, true); // silent refresh
+            
             const bonusDetails = response.data.firstScanBonus;
             
             if (bonusDetails && bonusDetails.isEligible) {
-                // Redirect to a stable page first, then open the modal over it.
                 router.push('/my-points'); 
-                // A small delay ensures the page transition feels smooth before the modal appears.
                 setTimeout(() => openWelcomeModal(bonusDetails), 300);
             } else {
                 triggerConfetti();
@@ -85,20 +112,26 @@ export default function ScanPage() {
         } catch (err) {
             const errorMessage = err.response?.data?.message || 'Failed to claim code.';
             showToast('error', 'Scan Failed', errorMessage);
-            triggerHapticFeedback();
+            triggerHapticFeedback(); // Haptic on error
             router.push('/');
         }
     };
 
+    // --- NEW: Add a cleanup effect ---
+    // This ensures that if the user navigates away from the scan page
+    // (e.g., using the nav bar), the camera is turned off.
+    useEffect(() => {
+        return () => {
+            if (scannerRef.current) {
+                scannerRef.current.clear().catch(error => console.error("Scanner failed to clear on unmount.", error));
+                scannerRef.current = null;
+            }
+        };
+    }, []); // The empty dependency array ensures this runs only on mount and unmount
+
     return (
         <AnimatedPage>
             <PageContainer>
-                {/* 
-                  This single parent div now controls the layout for all views.
-                  - `flex` and `flex-col` set up the layout direction.
-                  - `h-full` makes it take up the full height of the padded PageContainer.
-                  - `justify-center` is the key to vertical centering.
-                */}
                 <div className="flex flex-col justify-center h-full">
                     {view === 'landing' && (
                         <div className="text-center">
@@ -147,7 +180,7 @@ export default function ScanPage() {
                             {scannerError && <p className="text-center text-red-500 mt-4">{scannerError}</p>}
 
                             <button
-                                onClick={() => setView('landing')}
+                                onClick={() => router.push('/')} // Go to home to ensure cleanup
                                 className="mt-8 text-gray-600 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100"
                             >
                                 Cancel

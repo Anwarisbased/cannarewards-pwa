@@ -14,9 +14,7 @@ import { ChevronLeftIcon } from '@heroicons/react/24/solid';
 import { showToast } from '../../../components/CustomToast';
 
 export default function ProductDetailPage() {
-    // START: Updated useAuth call
     const { user, login, isAuthenticated, loading: authLoading, updateUserPoints } = useAuth();
-    // END: Updated useAuth call
     const { triggerConfetti } = useModal();
     const router = useRouter();
     const params = useParams();
@@ -74,7 +72,6 @@ export default function ProductDetailPage() {
         setShowShippingModal(true);
     };
 
-    // START: Updated handleFinalRedeem function
     const handleFinalRedeem = async (shippingDetails) => {
         setIsRedeeming(true);
         setShowShippingModal(false); 
@@ -82,14 +79,12 @@ export default function ProductDetailPage() {
         try {
             const responseData = await redeemReward(product.id, shippingDetails);
             
-            // Instantly update the UI with the new balance from the API response
             updateUserPoints(responseData.newBalance);
             
             setHasRedeemed(true);
             triggerConfetti();
             setShowSuccessModal(true); 
             
-            // Still perform a full silent refresh in the background
             const currentToken = localStorage.getItem('authToken');
             if (currentToken) login(currentToken, true);
             
@@ -98,7 +93,6 @@ export default function ProductDetailPage() {
             setIsRedeeming(false);
         }
     };
-    // END: Updated handleFinalRedeem function
 
     if (authLoading || loading || !productId) {
         return (
@@ -112,18 +106,18 @@ export default function ProductDetailPage() {
     
     const imageUrl = product.images && product.images[0] ? product.images[0].src : 'https://via.placeholder.com/300';
     const userPoints = user ? user.points : 0;
-    const canRedeem = userPoints >= product.points_cost;
+    const canRedeem = !isFirstScan ? userPoints >= product.points_cost : true;
     const pointsNeeded = product.points_cost - userPoints;
     
     let buttonText;
     if (isFirstScan) {
         buttonText = isRedeeming ? 'Claiming...' : 'Claim Your Welcome Gift!';
     } else {
-        buttonText = isRedeeming ? 'Processing...' : (canRedeem ? `Redeem` : `Earn ${pointsNeeded} more points`);
+        buttonText = isRedeeming ? 'Processing...' : (canRedeem ? `Redeem for ${product.points_cost} Points` : `Earn ${pointsNeeded} more points`);
     }
 
     const buttonDisabled = isRedeeming || !canRedeem;
-    const buttonClassName = `text-white font-semibold py-3 px-6 rounded-md transition-all w-auto text-center text-sm ${canRedeem && !isRedeeming ? 'bg-primary transform hover:opacity-90' : 'bg-gray-300 cursor-not-allowed'}`;
+    const buttonClassName = `w-full text-white font-bold py-4 px-6 rounded-lg text-lg transition-all text-center ${canRedeem && !isRedeeming ? 'bg-primary transform hover:opacity-90' : 'bg-gray-400 cursor-not-allowed'}`;
 
     return (
         <AnimatedPage>
@@ -142,7 +136,9 @@ export default function ProductDetailPage() {
                     currentUser={user} 
                 />
             )}
-            <main className="p-4 bg-white min-h-screen" style={{ paddingTop: '5rem', paddingBottom: '4rem' }}>
+            {/* --- ADJUSTED PADDING --- */}
+            {/* The main content now has extra padding at the bottom to ensure the sticky button doesn't hide anything */}
+            <main className="p-4 bg-white min-h-screen" style={{ paddingTop: '5rem', paddingBottom: '7rem' }}>
                 <div className="w-full max-w-md mx-auto">
                      <header className="flex items-center mb-4 h-16"><button onClick={() => router.back()} className="p-2 -ml-2 text-gray-700 hover:bg-gray-100 rounded-full"><ChevronLeftIcon className="h-7 w-7" /></button></header>
                     <div className="px-4">
@@ -156,10 +152,12 @@ export default function ProductDetailPage() {
                         )}
 
                         <p className="text-xl md:text-2xl font-semibold mb-4">{product.name}</p>
+                        
                         <div className="flex justify-between items-center mb-8 gap-4">
-                            <p className="text-3xl font-mono font-bold tracking-tighter text-primary">{product.points_cost.toFixed(0)} <span className="text-base font-sans font-normal text-gray-700 ml-1">Points</span></p>
-                            <button onClick={handleInitialRedeem} disabled={buttonDisabled} className={buttonClassName}>{buttonText}</button>
+                             <p className="text-3xl font-mono font-bold tracking-tighter text-primary">{product.points_cost.toFixed(0)} <span className="text-base font-sans font-normal text-gray-700 ml-1">Points</span></p>
+                             {/* The actual button element has been moved to the sticky container below */}
                         </div>
+
                         <div className="border-t border-gray-200 pt-6">
                             <h2 className="font-semibold mb-2 text-sm uppercase tracking-wider text-gray-600">Description</h2>
                             <p className="text-gray-700 text-base leading-relaxed">{product.description}</p>
@@ -167,6 +165,18 @@ export default function ProductDetailPage() {
                     </div>
                 </div>
             </main>
+
+            {/* --- NEW STICKY BUTTON CONTAINER --- */}
+            <div 
+              className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm p-4 border-t border-gray-200 z-10" 
+              style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+            >
+                <div className="max-w-md mx-auto">
+                    <button onClick={handleInitialRedeem} disabled={buttonDisabled} className={buttonClassName}>
+                        {buttonText}
+                    </button>
+                </div>
+            </div>
         </AnimatedPage>
     );
 }
