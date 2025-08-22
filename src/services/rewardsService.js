@@ -30,7 +30,6 @@ export const getPointHistory = async () => {
 
 export const getMyOrders = async () => {
     try {
-        // --- THIS LINE IS NOW CORRECTED ---
         const response = await api.get(`${API_BASE}/my-orders`);
         return response.data;
     } catch (error) {
@@ -53,5 +52,23 @@ export const getReferralGift = async () => {
         return response.data;
     } catch(error) {
         throw new Error('Could not load referral gift information.');
+    }
+};
+
+export const getMyReferrals = async () => {
+    try {
+        const response = await api.get(`${API_BASE}/me/referrals`);
+        return response.data;
+    } catch (error) {
+        throw new Error('Could not fetch your referral history.');
+    }
+};
+
+export const sendReferralNudge = async (refereeEmail) => {
+    try {
+        const response = await api.post(`${API_BASE}/me/referrals/nudge`, { email: refereeEmail });
+        return response.data; // Returns { success, message, share_text }
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Failed to prepare nudge.');
     }
 };
