@@ -71,9 +71,12 @@ export default function ScanPage() {
             const currentToken = localStorage.getItem('authToken');
             if (currentToken) login(currentToken);
             const bonusDetails = response.data.firstScanBonus;
+            
             if (bonusDetails && bonusDetails.isEligible) {
-                router.push('/my-points');
-                setTimeout(() => openWelcomeModal(bonusDetails), 500);
+                // Redirect to a stable page first, then open the modal over it.
+                router.push('/my-points'); 
+                // A small delay ensures the page transition feels smooth before the modal appears.
+                setTimeout(() => openWelcomeModal(bonusDetails), 300);
             } else {
                 triggerConfetti();
                 toast.success(response.data.message);

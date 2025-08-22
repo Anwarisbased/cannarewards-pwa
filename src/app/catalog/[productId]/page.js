@@ -5,6 +5,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useModal } from '../../../context/ModalContext';
 import AnimatedPage from '../../../components/AnimatedPage';
 import ShippingFormModal from '../../../components/ShippingFormModal';
+import SuccessModal from '../../../components/SuccessModal';
 import ProductDetailSkeleton from '../../../components/ProductDetailSkeleton';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { getProductById } from '@/services/woocommerceService';
@@ -26,13 +27,16 @@ export default function ProductDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [showShippingModal, setShowShippingModal] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [isRedeeming, setIsRedeeming] = useState(false);
+    const [hasRedeemed, setHasRedeemed] = useState(false); // <-- The new state flag
 
     useEffect(() => {
-        if (isFirstScan) {
-            triggerConfetti();
+        // Only auto-open the modal if it's the first scan AND we haven't already redeemed.
+        if (isFirstScan && product && user && !hasRedeemed) {
+            setShowShippingModal(true);
         }
-    }, [isFirstScan, triggerConfetti]);
+    }, [isFirstScan, product, user, hasRedeemed]); // <-- Add hasRedeemed to dependencies
 
     useEffect(() => {
         if (isAuthenticated && productId) {
@@ -71,19 +75,22 @@ export default function ProductDetailPage() {
 
     const handleFinalRedeem = async (shippingDetails) => {
         setIsRedeeming(true);
-        setShowShippingModal(false);
+        setShowShippingModal(false); 
+        
         try {
             await redeemReward(product.id, shippingDetails);
-            showToast('success', 'Success!', 'Your reward has been redeemed.');
+            
+            setHasRedeemed(true); // <-- Set the flag to true on success
+            
+            triggerConfetti();
+            setShowSuccessModal(true); 
             
             const currentToken = localStorage.getItem('authToken');
-            if (currentToken) login(currentToken, true); // Use silent login to refresh user data
+            if (currentToken) login(currentToken, true);
             
-            router.push('/orders');
         } catch (err) { 
             showToast('error', 'Redemption Failed', err.message || 'An unknown error occurred.');
-        } finally { 
-            setIsRedeeming(false); 
+            setIsRedeeming(false);
         }
     };
 
@@ -114,6 +121,14 @@ export default function ProductDetailPage() {
 
     return (
         <AnimatedPage>
+            {showSuccessModal && (
+                <SuccessModal 
+                    title="Redemption Successful!"
+                    message={`Your ${product.name} is on its way. You can check its status in your orders.`}
+                    buttonLabel="View My Orders"
+                    onButtonClick={() => router.push('/orders')}
+                />
+            )}
             {showShippingModal && (
                 <ShippingFormModal 
                     onCancel={() => setShowShippingModal(false)} 

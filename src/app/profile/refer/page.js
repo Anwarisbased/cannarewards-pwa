@@ -135,9 +135,8 @@ export default function ReferPage() {
         return <div className="text-center p-10">Loading...</div>;
     }
 
-    const referralLink = process.env.NODE_ENV === 'production' 
-        ? `https://cannarewards-pwa.vercel.app/claim?ref=${user.referralCode}`
-        : `http://localhost:3000/claim?ref=${user.referralCode}`;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const referralLink = `${siteUrl}/claim?ref=${user.referralCode}`;
 
     const handleCopy = () => {
         triggerHapticFeedback();
