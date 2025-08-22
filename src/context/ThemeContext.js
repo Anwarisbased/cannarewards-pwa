@@ -26,35 +26,14 @@ export function ThemeProvider({ children }) {
             existingStyle.remove();
         }
 
-        // --- DIRECT CSS OVERRIDE METHOD ---
-        const primary = theme.primaryColor || defaultTheme.primaryColor;
-        const secondary = theme.secondaryColor || defaultTheme.secondaryColor;
-
+        // The CSS is now much cleaner, only defining the variables.
         const css = `
             :root {
-                 --primary-font: "${theme.primaryFont || defaultTheme.primaryFont}", sans-serif;
-            }
-            .bg-primary {
-                background-color: ${primary} !important;
-            }
-            .bg-primary:hover {
-                filter: brightness(0.9);
-            }
-            .text-primary {
-                color: ${primary} !important;
-            }
-            .border-primary {
-                border-color: ${primary} !important;
-            }
-            .from-secondary {
-                --tw-gradient-from: ${secondary} var(--tw-gradient-from-position);
-                --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
-            }
-            .to-primary {
-                --tw-gradient-to: ${primary} var(--tw-gradient-to-position);
+                --primary-color: ${theme.primaryColor || defaultTheme.primaryColor};
+                --secondary-color: ${theme.secondaryColor || defaultTheme.secondaryColor};
+                --primary-font: "${theme.primaryFont || defaultTheme.primaryFont}", sans-serif;
             }
         `;
-        // --- END OF DIRECT OVERRIDE METHOD ---
 
         const style = document.createElement('style');
         style.id = styleId;

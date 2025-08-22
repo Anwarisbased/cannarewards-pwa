@@ -57,6 +57,14 @@ export function AuthProvider({ children }) {
     delete api.defaults.headers.common['Authorization'];
   };
   
+  // START: Added function for instant point updates
+  const updateUserPoints = (newBalance) => {
+    if (user) {
+        setUser(prevUser => ({ ...prevUser, points: newBalance }));
+    }
+  };
+  // END: Added function
+
   const value = {
     user,
     token,
@@ -64,6 +72,7 @@ export function AuthProvider({ children }) {
     logout,
     isAuthenticated: !!user,
     loading,
+    updateUserPoints, // Expose the new function
   };
 
   return (

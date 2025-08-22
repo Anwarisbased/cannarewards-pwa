@@ -7,8 +7,13 @@ module.exports = {
   ],
   theme: {
     extend: {
-      // We no longer define custom colors here.
-      // We will still keep the font family to make it the default.
+      colors: {
+        // This tells Tailwind to use CSS variables for these color names.
+        // Any class like `bg-primary`, `text-primary`, etc., will now
+        // look for the `--primary-color` variable in the CSS.
+        primary: 'var(--primary-color)',
+        secondary: 'var(--secondary-color)',
+      },
       fontFamily: {
         sans: ['var(--primary-font)', 'sans-serif'],
       },

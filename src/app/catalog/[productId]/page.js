@@ -14,7 +14,9 @@ import { ChevronLeftIcon } from '@heroicons/react/24/solid';
 import { showToast } from '../../../components/CustomToast';
 
 export default function ProductDetailPage() {
-    const { user, login, isAuthenticated, loading: authLoading } = useAuth();
+    // START: Updated useAuth call
+    const { user, login, isAuthenticated, loading: authLoading, updateUserPoints } = useAuth();
+    // END: Updated useAuth call
     const { triggerConfetti } = useModal();
     const router = useRouter();
     const params = useParams();
@@ -29,14 +31,13 @@ export default function ProductDetailPage() {
     const [showShippingModal, setShowShippingModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [isRedeeming, setIsRedeeming] = useState(false);
-    const [hasRedeemed, setHasRedeemed] = useState(false); // <-- The new state flag
+    const [hasRedeemed, setHasRedeemed] = useState(false); 
 
     useEffect(() => {
-        // Only auto-open the modal if it's the first scan AND we haven't already redeemed.
         if (isFirstScan && product && user && !hasRedeemed) {
             setShowShippingModal(true);
         }
-    }, [isFirstScan, product, user, hasRedeemed]); // <-- Add hasRedeemed to dependencies
+    }, [isFirstScan, product, user, hasRedeemed]);
 
     useEffect(() => {
         if (isAuthenticated && productId) {
@@ -73,18 +74,22 @@ export default function ProductDetailPage() {
         setShowShippingModal(true);
     };
 
+    // START: Updated handleFinalRedeem function
     const handleFinalRedeem = async (shippingDetails) => {
         setIsRedeeming(true);
         setShowShippingModal(false); 
         
         try {
-            await redeemReward(product.id, shippingDetails);
+            const responseData = await redeemReward(product.id, shippingDetails);
             
-            setHasRedeemed(true); // <-- Set the flag to true on success
+            // Instantly update the UI with the new balance from the API response
+            updateUserPoints(responseData.newBalance);
             
+            setHasRedeemed(true);
             triggerConfetti();
             setShowSuccessModal(true); 
             
+            // Still perform a full silent refresh in the background
             const currentToken = localStorage.getItem('authToken');
             if (currentToken) login(currentToken, true);
             
@@ -93,6 +98,7 @@ export default function ProductDetailPage() {
             setIsRedeeming(false);
         }
     };
+    // END: Updated handleFinalRedeem function
 
     if (authLoading || loading || !productId) {
         return (
