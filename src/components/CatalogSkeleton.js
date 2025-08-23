@@ -1,35 +1,29 @@
-import { ChevronLeftIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import PageContainer from './PageContainer';
 
-// This is a reusable component for a single shimmering card
+// --- SHADCN IMPORT ---
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Reusable component for a single shimmering card
 function SkeletonProductCard() {
     return (
-        <div className="bg-gray-200 rounded-lg overflow-hidden">
-            <div className="w-full h-48 bg-gray-300"></div>
-            <div className="p-3 space-y-3">
-                <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-                <div className="h-5 bg-gray-300 rounded w-1/2"></div>
+        <div className="flex flex-col space-y-3">
+            <Skeleton className="h-[150px] w-full rounded-xl" />
+            <div className="space-y-2">
+                <Skeleton className="h-4 w-[120px]" />
+                <Skeleton className="h-4 w-[80px]" />
             </div>
         </div>
     );
 }
 
-
 export default function CatalogSkeleton() {
     return (
-        <div className="p-4 bg-white min-h-screen w-full max-w-md mx-auto animate-pulse">
-            {/* --- Skeleton Header --- */}
-            <header className="flex items-center mb-4 h-16">
-                <div className="p-2 -ml-2">
-                    <ChevronLeftIcon className="h-6 w-6 text-gray-300" />
-                </div>
-                <div className="h-6 w-24 bg-gray-300 rounded-md mx-auto"></div>
-                <div className="w-6 h-6"></div>
-            </header>
-
+        <PageContainer>
             {/* --- Skeleton Search Bar --- */}
             <div className="relative mb-6">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-300" />
-                <div className="w-full bg-gray-200 border-none rounded-lg h-12"></div>
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Skeleton className="h-12 w-full rounded-lg" />
             </div>
             
             {/* --- Skeleton Grid --- */}
@@ -41,6 +35,6 @@ export default function CatalogSkeleton() {
                 <SkeletonProductCard />
                 <SkeletonProductCard />
             </div>
-        </div>
+        </PageContainer>
     );
 }

@@ -1,7 +1,9 @@
 import api from '@/utils/axiosConfig';
-const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1`;
+
+// REMOVED: const API_BASE = ...
 
 export const claimRewardCode = async (code) => {
+    const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1`;
     try {
         const response = await api.post(`${API_BASE}/claim`, { code });
         return response.data;
@@ -11,6 +13,7 @@ export const claimRewardCode = async (code) => {
 };
 
 export const redeemReward = async (productId, shippingDetails) => {
+    const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1`;
     try {
         const response = await api.post(`${API_BASE}/redeem`, { productId, shippingDetails });
         return response.data;
@@ -20,6 +23,7 @@ export const redeemReward = async (productId, shippingDetails) => {
 };
 
 export const getPointHistory = async () => {
+    const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1`;
     try {
         const response = await api.get(`${API_BASE}/point-history`);
         return response.data;
@@ -29,6 +33,7 @@ export const getPointHistory = async () => {
 };
 
 export const getMyOrders = async () => {
+    const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1`;
     try {
         const response = await api.get(`${API_BASE}/my-orders`);
         return response.data;
@@ -38,6 +43,7 @@ export const getMyOrders = async () => {
 };
 
 export const getWelcomeRewardPreview = async () => {
+    const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1`;
     try {
         const response = await api.get(`${API_BASE}/preview-reward`);
         return response.data;
@@ -47,6 +53,7 @@ export const getWelcomeRewardPreview = async () => {
 };
 
 export const getReferralGift = async () => {
+    const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1`;
     try {
         const response = await api.get(`${API_BASE}/referral-gift`);
         return response.data;
@@ -56,6 +63,7 @@ export const getReferralGift = async () => {
 };
 
 export const getMyReferrals = async () => {
+    const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1`;
     try {
         const response = await api.get(`${API_BASE}/me/referrals`);
         return response.data;
@@ -65,9 +73,10 @@ export const getMyReferrals = async () => {
 };
 
 export const sendReferralNudge = async (refereeEmail) => {
+    const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1`;
     try {
         const response = await api.post(`${API_BASE}/me/referrals/nudge`, { email: refereeEmail });
-        return response.data; // Returns { success, message, share_text }
+        return response.data;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Failed to prepare nudge.');
     }

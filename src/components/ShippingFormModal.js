@@ -2,35 +2,67 @@
 import { useState } from 'react';
 import { PencilIcon } from '@heroicons/react/24/solid';
 
-// A new sub-component for displaying the static address
+// --- SHADCN IMPORTS ---
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+// --- END IMPORTS ---
+
+// Sub-component for displaying the static address (now uses Shadcn components)
 const AddressDisplay = ({ details, onEdit }) => (
-    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
+    <div className="bg-secondary p-4 rounded-lg border mb-6">
         <div className="flex justify-between items-start">
             <div>
-                <p className="font-semibold text-gray-800">{details.firstName} {details.lastName}</p>
-                <p className="text-gray-600">{details.address1}</p>
-                <p className="text-gray-600">{details.city}, {details.state} {details.zip}</p>
+                <p className="font-semibold text-secondary-foreground">{details.firstName} {details.lastName}</p>
+                <p className="text-muted-foreground">{details.address1}</p>
+                <p className="text-muted-foreground">{details.city}, {details.state} {details.zip}</p>
             </div>
-            <button onClick={onEdit} className="p-2 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-full">
-                <PencilIcon className="h-5 w-5" />
+            <Button onClick={onEdit} variant="ghost" size="icon" className="h-8 w-8">
+                <PencilIcon className="h-4 w-4" />
                 <span className="sr-only">Edit Address</span>
-            </button>
+            </Button>
         </div>
     </div>
 );
 
-// A new sub-component for the editable form fields
+// Sub-component for the editable form fields (now uses Shadcn components)
 const AddressForm = ({ details, handleChange }) => (
     <div className="space-y-4 mb-6">
-        <div className="flex flex-col sm:flex-row sm:space-x-4">
-            <input name="firstName" placeholder="First Name" value={details.firstName} onChange={handleChange} required className="w-full p-2 border border-gray-300 rounded mb-4 sm:mb-0" />
-            <input name="lastName" placeholder="Last Name" value={details.lastName} onChange={handleChange} required className="w-full p-2 border border-gray-300 rounded" />
+        <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input id="firstName" name="firstName" placeholder="Jane" value={details.firstName} onChange={handleChange} required />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input id="lastName" name="lastName" placeholder="Doe" value={details.lastName} onChange={handleChange} required />
+            </div>
         </div>
-        <input name="address1" placeholder="Address Line 1" value={details.address1} onChange={handleChange} required className="w-full p-2 border border-gray-300 rounded" />
-        <div className="flex flex-col sm:flex-row sm:space-x-4">
-            <input name="city" placeholder="City" value={details.city} onChange={handleChange} required className="w-full p-2 border border-gray-300 rounded mb-4 sm:mb-0" />
-            <input name="state" placeholder="State / Province" value={details.state} onChange={handleChange} required className="w-full p-2 border border-gray-300 rounded mb-4 sm:mb-0" />
-            <input name="zip" placeholder="ZIP / Postal Code" value={details.zip} onChange={handleChange} required className="w-full p-2 border border-gray-300 rounded" />
+        <div className="space-y-2">
+            <Label htmlFor="address1">Address Line 1</Label>
+            <Input id="address1" name="address1" placeholder="123 Main St" value={details.address1} onChange={handleChange} required />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input id="city" name="city" placeholder="Anytown" value={details.city} onChange={handleChange} required />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="state">State</Label>
+                <Input id="state" name="state" placeholder="CA" value={details.state} onChange={handleChange} required />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="zip">ZIP Code</Label>
+                <Input id="zip" name="zip" placeholder="12345" value={details.zip} onChange={handleChange} required />
+            </div>
         </div>
     </div>
 );
@@ -46,8 +78,6 @@ export default function ShippingFormModal({ onSubmit, onCancel, currentUser }) {
         zip: currentUser?.shipping?.shipping_postcode || ''
     });
 
-    // --- NEW STATE TO TOGGLE BETWEEN VIEWS ---
-    // Start in 'edit' mode only if the address is incomplete.
     const isAddressComplete = details.address1 && details.city && details.state && details.zip;
     const [isEditing, setIsEditing] = useState(!isAddressComplete);
 
@@ -57,42 +87,40 @@ export default function ShippingFormModal({ onSubmit, onCancel, currentUser }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // If they were editing, switch back to display view before submitting.
-        if (isEditing) {
-            setIsEditing(false); 
-        }
         onSubmit(details);
     };
-
+    
+    // We wrap our modal content in a Dialog component with an open prop
+    // This allows the parent component to control its visibility without managing the Dialog state itself
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-            <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-lg shadow-xl max-w-lg w-full">
-                <h2 className="text-2xl font-bold mb-2">
-                    {isEditing ? 'Update Shipping Details' : 'Confirm Shipping Details'}
-                </h2>
-                <p className="text-sm text-gray-600 mb-6">
-                    {isEditing 
-                        ? 'Please provide your address to ship this reward.' 
-                        : 'Your reward will be shipped to the address below.'}
-                </p>
+        <Dialog open={true} onOpenChange={(isOpen) => !isOpen && onCancel()}>
+            <DialogContent className="sm:max-w-xl">
+                <DialogHeader>
+                    <DialogTitle className="text-2xl">
+                        {isEditing ? 'Update Shipping Details' : 'Confirm Shipping Details'}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {isEditing 
+                            ? 'Please provide your address to ship this reward.' 
+                            : 'Your reward will be shipped to the address below.'}
+                    </DialogDescription>
+                </DialogHeader>
 
-                {/* --- CONDITIONAL RENDERING BASED ON `isEditing` STATE --- */}
-                {isEditing ? (
-                    <AddressForm details={details} handleChange={handleChange} />
-                ) : (
-                    <AddressDisplay details={details} onEdit={() => setIsEditing(true)} />
-                )}
+                <form id="shipping-form" onSubmit={handleSubmit}>
+                    {isEditing ? (
+                        <AddressForm details={details} handleChange={handleChange} />
+                    ) : (
+                        <AddressDisplay details={details} onEdit={() => setIsEditing(true)} />
+                    )}
+                </form>
                 
-                <div className="flex justify-end space-x-4 pt-4">
-                    <button type="button" onClick={onCancel} className="py-2 px-6 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg">
-                        Cancel
-                    </button>
-                    <button type="submit" className="py-2 px-6 bg-primary hover:opacity-90 text-white font-semibold rounded-lg">
-                        {/* The button text changes based on the view */}
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+                    <Button type="submit" form="shipping-form">
                         {isEditing ? 'Save & Redeem' : 'Confirm & Redeem'}
-                    </button>
-                </div>
-            </form>
-        </div>
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

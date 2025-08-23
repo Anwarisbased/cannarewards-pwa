@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useModal } from '../../context/ModalContext'; 
 import { useRouter } from 'next/navigation';
 import MenuItem from '../../components/MenuItem';
 import { motion } from 'framer-motion';
@@ -9,6 +10,7 @@ import AnimatedPage from '../../components/AnimatedPage';
 
 export default function ProfilePage() {
     const { user, logout, isAuthenticated, loading } = useAuth();
+    const { openEditProfileModal, openContentModal } = useModal(); 
     const router = useRouter();
 
     useEffect(() => {
@@ -42,7 +44,6 @@ export default function ProfilePage() {
               className="p-4 bg-white min-h-screen"
               style={{
                 paddingTop: `env(safe-area-inset-top)`,
-                // UPDATED PADDING: 5rem accounts for the new h-20 navbar area
                 paddingBottom: `calc(5rem + env(safe-area-inset-bottom))` 
               }}
             >
@@ -61,15 +62,15 @@ export default function ProfilePage() {
                     </motion.div>
                     
                     <div className="rounded-lg shadow-sm overflow-hidden mb-4 border border-gray-200">
-                        <MenuItem href="/profile/edit" label="Edit Profile" />
+                        <MenuItem onClick={openEditProfileModal} label="Edit Profile" />
                         <MenuItem href="/history" label="Point History" />
                         <MenuItem href="/orders" label="My Orders" />
                     </div>
 
                     <div className="rounded-lg shadow-sm overflow-hidden mb-4 border border-gray-200">
                         <MenuItem href="/settings" label="Settings" />
-                        <MenuItem href="/terms" label="Terms and Conditions" />
-                        <MenuItem href="/support" label="Support" />
+                        <MenuItem onClick={() => openContentModal('terms-and-conditions')} label="Terms and Conditions" />
+                        <MenuItem onClick={() => openContentModal('support')} label="Support" />
                     </div>
                     
                     <div className="rounded-lg shadow-sm overflow-hidden mt-6 border border-gray-200">

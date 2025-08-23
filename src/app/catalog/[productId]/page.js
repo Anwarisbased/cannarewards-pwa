@@ -1,182 +1,140 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '../../../context/AuthContext';
-import { useModal } from '../../../context/ModalContext';
-import AnimatedPage from '../../../components/AnimatedPage';
-import ShippingFormModal from '../../../components/ShippingFormModal';
-import SuccessModal from '../../../components/SuccessModal';
-import ProductDetailSkeleton from '../../../components/ProductDetailSkeleton';
-import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { getProductById } from '@/services/woocommerceService';
-import { redeemReward } from '@/services/rewardsService';
-import { ChevronLeftIcon } from '@heroicons/react/24/solid';
-import { showToast } from '../../../components/CustomToast';
+import { useAuth } from '../../context/AuthContext';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { getProducts } from '@/services/woocommerceService';
+import CatalogSkeleton from '../../components/CatalogSkeleton';
+import ImageWithLoader from '../../components/ImageWithLoader';
+import PageContainer from '../../components/PageContainer';
+import { MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline'; // Added PlusIcon
 
-export default function ProductDetailPage() {
-    const { user, login, isAuthenticated, loading: authLoading, updateUserPoints } = useAuth();
-    const { triggerConfetti } = useModal();
-    const router = useRouter();
-    const params = useParams();
-    const searchParams = useSearchParams();
+// --- SHADCN IMPORTS ---
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Input } from "@/components/ui/input";
+// --- END IMPORTS ---
 
-    const productId = params ? params.productId : null;
-    const isFirstScan = searchParams.get('first_scan') === 'true';
-
-    const [product, setProduct] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [showShippingModal, setShowShippingModal] = useState(false);
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [isRedeeming, setIsRedeeming] = useState(false);
-    const [hasRedeemed, setHasRedeemed] = useState(false); 
-
-    useEffect(() => {
-        if (isFirstScan && product && user && !hasRedeemed) {
-            setShowShippingModal(true);
-        }
-    }, [isFirstScan, product, user, hasRedeemed]);
-
-    useEffect(() => {
-        if (isAuthenticated && productId) {
-            const fetchProduct = async () => {
-                setLoading(true);
-                try {
-                    const responseData = await getProductById(productId);
-                    const pointsMeta = responseData.meta_data.find(meta => meta.key === 'points_cost');
-                    setProduct({ 
-                        id: responseData.id, 
-                        name: responseData.name, 
-                        images: responseData.images, 
-                        description: responseData.description.replace(/<[^>]*>?/gm, ''), 
-                        points_cost: pointsMeta ? parseInt(pointsMeta.value) : null 
-                    });
-                    setError('');
-                } catch (err) { 
-                    setError(err.message || 'Could not load product details.'); 
-                } finally { 
-                    setLoading(false); 
-                }
-            };
-            fetchProduct();
-        } else if (!authLoading && !isAuthenticated) { 
-            router.push('/'); 
-        }
-    }, [productId, isAuthenticated, authLoading, router]);
-
-    const handleInitialRedeem = () => {
-        if (!user || user.points < product.points_cost) { 
-            showToast('error', 'Not Enough Points', "You don't have enough points to redeem this reward!");
-            return; 
-        }
-        setShowShippingModal(true);
-    };
-
-    const handleFinalRedeem = async (shippingDetails) => {
-        setIsRedeeming(true);
-        setShowShippingModal(false); 
-        
-        try {
-            const responseData = await redeemReward(product.id, shippingDetails);
-            
-            updateUserPoints(responseData.newBalance);
-            
-            setHasRedeemed(true);
-            triggerConfetti();
-            setShowSuccessModal(true); 
-            
-            const currentToken = localStorage.getItem('authToken');
-            if (currentToken) login(currentToken, true);
-            
-        } catch (err) { 
-            showToast('error', 'Redemption Failed', err.message || 'An unknown error occurred.');
-            setIsRedeeming(false);
-        }
-    };
-
-    if (authLoading || loading || !productId) {
-        return (
-            <div className="pt-20">
-                <ProductDetailSkeleton />
-            </div>
-        );
-    }
-    if (error) { return <div className="min-h-screen bg-white text-center p-10 pt-20">{error}</div>; }
-    if (!product) { return <div className="min-h-screen bg-white text-center p-10 pt-20">Product not found.</div>; }
-    
-    const imageUrl = product.images && product.images[0] ? product.images[0].src : 'https://via.placeholder.com/300';
-    const userPoints = user ? user.points : 0;
-    const canRedeem = !isFirstScan ? userPoints >= product.points_cost : true;
-    const pointsNeeded = product.points_cost - userPoints;
-    
-    let buttonText;
-    if (isFirstScan) {
-        buttonText = isRedeeming ? 'Claiming...' : 'Claim Your Welcome Gift!';
-    } else {
-        buttonText = isRedeeming ? 'Processing...' : (canRedeem ? `Redeem for ${product.points_cost} Points` : `Earn ${pointsNeeded} more points`);
-    }
-
-    const buttonDisabled = isRedeeming || !canRedeem;
-    const buttonClassName = `w-full text-white font-bold py-4 px-6 rounded-lg text-lg transition-all text-center ${canRedeem && !isRedeeming ? 'bg-primary transform hover:opacity-90' : 'bg-gray-400 cursor-not-allowed'}`;
+// --- Refactored ProductCard Component ---
+function ProductCard({ product }) {
+    const imageUrl = product.images?.[0]?.src || 'https://via.placeholder.com/300';
 
     return (
-        <AnimatedPage>
-            {showSuccessModal && (
-                <SuccessModal 
-                    title="Redemption Successful!"
-                    message={`Your ${product.name} is on its way. You can check its status in your orders.`}
-                    buttonLabel="View My Orders"
-                    onButtonClick={() => router.push('/orders')}
-                />
-            )}
-            {showShippingModal && (
-                <ShippingFormModal 
-                    onCancel={() => setShowShippingModal(false)} 
-                    onSubmit={handleFinalRedeem}
-                    currentUser={user} 
-                />
-            )}
-            {/* --- ADJUSTED PADDING --- */}
-            {/* The main content now has extra padding at the bottom to ensure the sticky button doesn't hide anything */}
-            <main className="p-4 bg-white min-h-screen" style={{ paddingTop: '5rem', paddingBottom: '7rem' }}>
-                <div className="w-full max-w-md mx-auto">
-                     <header className="flex items-center mb-4 h-16"><button onClick={() => router.back()} className="p-2 -ml-2 text-gray-700 hover:bg-gray-100 rounded-full"><ChevronLeftIcon className="h-7 w-7" /></button></header>
-                    <div className="px-4">
-                        <div className="bg-gray-100 rounded-lg mb-6"><img src={imageUrl} alt={product.name} className="w-full aspect-square object-contain" /></div>
-                        
-                        {isFirstScan && (
-                            <div className="text-center mb-4">
-                                <h2 className="text-2xl font-bold text-primary">Congratulations!</h2>
-                                <p className="text-gray-600">Here is your welcome reward, on us.</p>
-                            </div>
-                        )}
-
-                        <p className="text-xl md:text-2xl font-semibold mb-4">{product.name}</p>
-                        
-                        <div className="flex justify-between items-center mb-8 gap-4">
-                             <p className="text-3xl font-mono font-bold tracking-tighter text-primary">{product.points_cost.toFixed(0)} <span className="text-base font-sans font-normal text-gray-700 ml-1">Points</span></p>
-                             {/* The actual button element has been moved to the sticky container below */}
-                        </div>
-
-                        <div className="border-t border-gray-200 pt-6">
-                            <h2 className="font-semibold mb-2 text-sm uppercase tracking-wider text-gray-600">Description</h2>
-                            <p className="text-gray-700 text-base leading-relaxed">{product.description}</p>
+        <Link href={`/catalog/${product.id}`} className="block group">
+            <Card className="overflow-hidden h-full flex flex-col">
+                <CardContent className="p-0 flex-grow">
+                    <div className="relative">
+                        <AspectRatio ratio={1 / 1}>
+                            <ImageWithLoader 
+                                src={imageUrl} 
+                                alt={product.name} 
+                                className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
+                            />
+                        </AspectRatio>
+                        <div className="absolute bottom-2 right-2 bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
+                            <PlusIcon className="w-5 h-5" />
                         </div>
                     </div>
-                </div>
-            </main>
+                </CardContent>
+                <CardFooter className="p-3 flex-col items-start">
+                    <h3 className="text-sm font-medium truncate text-foreground w-full">{product.name}</h3>
+                    <p className="text-base font-semibold text-foreground">{product.points_cost} Points</p>
+                </CardFooter>
+            </Card>
+        </Link>
+    );
+}
 
-            {/* --- NEW STICKY BUTTON CONTAINER --- */}
-            <div 
-              className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm p-4 border-t border-gray-200 z-10" 
-              style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
-            >
-                <div className="max-w-md mx-auto">
-                    <button onClick={handleInitialRedeem} disabled={buttonDisabled} className={buttonClassName}>
-                        {buttonText}
-                    </button>
-                </div>
+export default function CatalogPage() {
+    const { isAuthenticated, loading: authLoading } = useAuth();
+    const router = useRouter();
+    const [allProducts, setAllProducts] = useState([]);
+    const [filteredProducts, setFilteredProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+
+    useEffect(() => {
+        if (!authLoading && !isAuthenticated) {
+            router.push('/');
+            return;
+        }
+
+        if (isAuthenticated) {
+            const fetchProducts = async () => {
+                try {
+                    const productsFromApi = await getProducts();
+                    const formattedProducts = productsFromApi.map(p => {
+                        const pointsMeta = p.meta_data.find(meta => meta.key === 'points_cost');
+                        return { 
+                            id: p.id, 
+                            name: p.name, 
+                            images: p.images, 
+                            points_cost: pointsMeta ? parseInt(pointsMeta.value) : null 
+                        };
+                    }).filter(p => p.points_cost !== null);
+
+                    setAllProducts(formattedProducts);
+                    setFilteredProducts(formattedProducts);
+                } catch (err) {
+                    console.error("Failed to fetch products:", err);
+                    setError(err.message || 'Could not load rewards. Please try again later.');
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchProducts();
+        }
+    }, [isAuthenticated, authLoading, router]);
+    
+    useEffect(() => {
+        if (searchTerm === '') {
+            setFilteredProducts(allProducts);
+        } else {
+            const filtered = allProducts.filter(product => 
+                product.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            setFilteredProducts(filtered);
+        }
+    }, [searchTerm, allProducts]);
+
+    if (authLoading || loading) {
+        return <CatalogSkeleton />;
+    }
+    
+    return (
+        <PageContainer>
+            <div className="relative mb-6">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input 
+                    type="text"
+                    placeholder="Search for rewards"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-secondary border-none pl-10 pr-10" 
+                />
+                {searchTerm && (
+                    <XMarkIcon 
+                        className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground cursor-pointer" 
+                        onClick={() => setSearchTerm('')}
+                    />
+                )}
             </div>
-        </AnimatedPage>
+            
+            {error && <p className="text-destructive text-center">{error}</p>}
+            
+            {!error && filteredProducts.length === 0 && (
+                <p className="text-center text-muted-foreground mt-8">
+                    {searchTerm ? `No rewards found for "${searchTerm}"` : "No rewards available yet."}
+                </p>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+                {filteredProducts.map(product => (
+                    <ProductCard key={product.id} product={product} />
+                ))}
+            </div>
+        </PageContainer>
     );
 }

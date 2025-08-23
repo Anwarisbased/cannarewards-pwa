@@ -1,37 +1,42 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
-import { useRouter } from 'next/navigation';
 
-const modalVariants = {
-    hidden: { opacity: 0, scale: 0.9 },
-    visible: { opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 300, damping: 25 } },
-};
+// --- SHADCN IMPORTS ---
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+// --- END IMPORTS ---
 
 export default function SuccessModal({ title, message, buttonLabel, onButtonClick }) {
+    // The parent component controls visibility, so we just need `open={true}`.
+    // The `onOpenChange` with `onButtonClick` handles closing when the user clicks away,
+    // though the primary action is the button.
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <motion.div
-                className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-8 text-center"
-                variants={modalVariants}
-                initial="hidden"
-                animate="visible"
-            >
-                <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full mx-auto flex items-center justify-center mb-6">
-                    <CheckCircleIcon className="h-12 w-12" />
-                </div>
+        <Dialog open={true} onOpenChange={onButtonClick}>
+            <DialogContent className="sm:max-w-md text-center">
+                <DialogHeader className="flex flex-col items-center">
+                    <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full mx-auto flex items-center justify-center mb-6">
+                        <CheckCircleIcon className="h-12 w-12" />
+                    </div>
+                    <DialogTitle className="text-2xl">{title}</DialogTitle>
+                </DialogHeader>
                 
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
-                <p className="text-gray-600 mb-8">{message}</p>
+                <div className="py-4">
+                    <p className="text-muted-foreground">{message}</p>
+                </div>
 
-                <button
-                    onClick={onButtonClick}
-                    className="w-full py-3 px-6 bg-primary text-white font-bold rounded-lg transform hover:scale-105 transition-transform"
-                >
-                    {buttonLabel}
-                </button>
-            </motion.div>
-        </div>
+                <DialogFooter className="sm:justify-center">
+                    <Button onClick={onButtonClick} className="w-full">
+                        {buttonLabel}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

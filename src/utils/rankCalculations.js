@@ -6,34 +6,34 @@
  * @returns {object} An object containing nextRank, progressPercentage, and pointsNeeded.
  */
 export function calculateRankProgress(user) {
-    // A "guard clause" to handle cases where user data might not be loaded yet.
-    if (!user || !user.allRanks || !user.lifetimePoints) {
+    if (!user || !user.allRanks || user.lifetimePoints === null || user.lifetimePoints === undefined) {
         return { nextRank: null, progressPercentage: 0, pointsNeeded: 0 };
     }
 
-    // Ranks from the API are an object, so we convert to an array and sort by points ascending.
-    const sortedRanks = Object.values(user.allRanks).sort((a, b) => a.points - b.points);
+    // --- THIS IS THE FIX ---
+    // The utility now sorts the ranks itself, ensuring it always works correctly
+    // regardless of the order it receives them in.
+    const sortedRanksAsc = Object.values(user.allRanks).sort((a, b) => a.points - b.points);
     
     let nextRank = null;
     let currentRankPoints = 0;
 
-    // Iterate through the sorted ranks to find where the user currently stands.
-    for (const rank of sortedRanks) {
+    // Iterate through the ranks sorted from LOWEST to HIGHEST
+    for (const rank of sortedRanksAsc) {
         if (user.lifetimePoints < rank.points) {
             // This is the first rank the user has NOT yet achieved. This is their "nextRank".
             nextRank = rank;
-            break;
+            break; 
         }
         // If the user has enough points for this rank, we update the floor for our calculation.
         currentRankPoints = rank.points;
     }
 
-    // If a nextRank was found, calculate the progress towards it.
+    // --- The rest of the logic is now correct because the inputs are sorted correctly ---
     if (nextRank) {
         const pointsInCurrentTier = user.lifetimePoints - currentRankPoints;
         const pointsForNextTier = nextRank.points - currentRankPoints;
 
-        // Avoid division by zero if ranks have the same point value.
         if (pointsForNextTier <= 0) {
             return { nextRank, progressPercentage: 100, pointsNeeded: 0 };
         }
