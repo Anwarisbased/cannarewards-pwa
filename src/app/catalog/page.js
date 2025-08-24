@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/context/AuthContext'; // CORRECTED PATH
+import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getProducts } from '@/services/woocommerceService';
-import CatalogSkeleton from '@/components/CatalogSkeleton'; // CORRECTED PATH
-import ImageWithLoader from '@/components/ImageWithLoader'; // CORRECTED PATH
-import PageContainer from '@/components/PageContainer'; // CORRECTED PATH
+import CatalogSkeleton from '@/components/CatalogSkeleton';
+import ImageWithLoader from '@/components/ImageWithLoader';
+import PageContainer from '@/components/PageContainer';
 import { MagnifyingGlassIcon, PlusIcon, XMarkIcon, LockClosedIcon } from '@heroicons/react/24/outline';
+import { cn } from "@/components/lib/utils";
 
 // --- SHADCN IMPORTS ---
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -18,30 +19,51 @@ import { Badge } from "@/components/ui/badge";
 // --- END IMPORTS ---
 
 // --- Refactored ProductCard Component ---
-function ProductCard({ product }) {
+function ProductCard({ product, user }) {
     const imageUrl = product.images?.[0]?.src || 'https://via.placeholder.com/300';
 
+    // --- NEW: Logic to check if the reward is locked ---
+    const userRankData = user?.rank || {};
+    const allRanks = user?.allRanks || {};
+    const userRankPoints = allRanks[userRankData.key]?.points ?? 0;
+    const requiredRankPoints = allRanks[product.tierRequired]?.points ?? 0;
+    const isLocked = product.tierRequired && userRankPoints < requiredRankPoints;
+    
+    const Wrapper = isLocked ? 'div' : Link;
+    const wrapperProps = isLocked ? {} : { href: `/catalog/${product.id}` };
+
     return (
-        <Link href={`/catalog/${product.id}`} className="block group">
-            <Card className="overflow-hidden h-full flex flex-col">
+        <Wrapper {...wrapperProps} className="block group">
+            <Card className={cn(
+                "overflow-hidden h-full flex flex-col",
+                isLocked && "bg-gray-50 opacity-60"
+            )}>
                 <CardContent className="p-0 flex-grow">
                     <div className="relative">
                         <AspectRatio ratio={1 / 1}>
                             <ImageWithLoader 
                                 src={imageUrl} 
                                 alt={product.name} 
-                                className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
+                                className={cn(
+                                    "w-full h-full object-cover transition-transform duration-300 ease-in-out",
+                                    !isLocked && "group-hover:scale-105"
+                                )}
                             />
+                            {isLocked && <div className="absolute inset-0 bg-white/30 backdrop-blur-[2px]"></div>}
                         </AspectRatio>
+
                         {product.tierRequired && (
-                            <Badge variant="secondary" className="absolute top-2 left-2">
+                            <Badge variant={isLocked ? "outline" : "secondary"} className="absolute top-2 left-2 bg-white/80">
                                 <LockClosedIcon className="w-3 h-3 mr-1.5" />
-                                {product.tierRequired} Exclusive
+                                {allRanks[product.tierRequired]?.name || product.tierRequired} Tier
                             </Badge>
                         )}
-                        <div className="absolute bottom-2 right-2 bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
-                            <PlusIcon className="w-5 h-5" />
-                        </div>
+                        
+                        {!isLocked && (
+                            <div className="absolute bottom-2 right-2 bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
+                                <PlusIcon className="w-5 h-5" />
+                            </div>
+                        )}
                     </div>
                 </CardContent>
                 <CardFooter className="p-3 flex-col items-start">
@@ -49,12 +71,12 @@ function ProductCard({ product }) {
                     <p className="text-base font-semibold text-foreground">{product.points_cost} Points</p>
                 </CardFooter>
             </Card>
-        </Link>
+        </Wrapper>
     );
 }
 
 export default function CatalogPage() {
-    const { isAuthenticated, loading: authLoading } = useAuth();
+    const { user, isAuthenticated, loading: authLoading } = useAuth(); // GET USER OBJECT
     const router = useRouter();
     const [allProducts, setAllProducts] = useState([]);
     const [filteredProducts, setFilteredProducts] = useState([]);
@@ -68,7 +90,7 @@ export default function CatalogPage() {
             return;
         }
 
-        if (isAuthenticated) {
+        if (isAuthenticated && user) { // Ensure user object is available
             const fetchProducts = async () => {
                 try {
                     const productsFromApi = await getProducts();
@@ -80,14 +102,13 @@ export default function CatalogPage() {
                             name: p.name, 
                             images: p.images, 
                             points_cost: pointsMeta ? parseInt(pointsMeta.value) : null,
-                            tierRequired: tierMeta ? tierMeta.value : null
+                            tierRequired: tierMeta?.value || null
                         };
                     }).filter(p => p.points_cost !== null);
 
                     setAllProducts(formattedProducts);
                     setFilteredProducts(formattedProducts);
                 } catch (err) {
-                    console.error("Failed to fetch products:", err);
                     setError(err.message || 'Could not load rewards. Please try again later.');
                 } finally {
                     setLoading(false);
@@ -95,7 +116,7 @@ export default function CatalogPage() {
             };
             fetchProducts();
         }
-    }, [isAuthenticated, authLoading, router]);
+    }, [isAuthenticated, authLoading, router, user]);
     
     useEffect(() => {
         if (searchTerm === '') {
@@ -108,7 +129,7 @@ export default function CatalogPage() {
         }
     }, [searchTerm, allProducts]);
 
-    if (authLoading || loading) {
+    if (authLoading || loading || !user) {
         return <CatalogSkeleton />;
     }
     
@@ -141,7 +162,7 @@ export default function CatalogPage() {
 
             <div className="grid grid-cols-2 gap-4">
                 {filteredProducts.map(product => (
-                    <ProductCard key={product.id} product={product} />
+                    <ProductCard key={product.id} product={product} user={user} />
                 ))}
             </div>
         </PageContainer>

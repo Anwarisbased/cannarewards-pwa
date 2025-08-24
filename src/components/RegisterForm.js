@@ -19,7 +19,6 @@ import AnimatedProgressBar from './AnimatedProgressBar';
 import ImageWithLoader from './ImageWithLoader';
 
 export default function RegisterForm({ onSwitchToLogin, claimCode = null, rewardPreview = null }) {
-  // --- All your state hooks are correct ---
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -34,9 +33,6 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
   const { login } = useAuth();
   const router = useRouter();
 
-  // --- START OF CORRECTED LOGIC SECTION ---
-
-  // This useEffect calculates password strength whenever the password changes.
   useEffect(() => {
     if (password) {
       const result = zxcvbn(password);
@@ -49,7 +45,6 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
     }
   }, [password]);
 
-  // This is the function I broke. Here is the correct, working version.
   const getStrengthIndicator = () => {
       switch (passwordStrength.score) {
           case 0: return { progress: 0, barColor: 'bg-gray-200', textColor: 'text-gray-400', label: '' };
@@ -61,11 +56,10 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
       }
   };
 
-  // This handleSubmit function is also critical and should be here.
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!agreedToTerms) {
-      showToast("error", "Terms Required", "You must agree to the terms and conditions.");
+      showToast("error", "Agreement Required", "You must certify your age and agree to the terms.");
       return;
     }
     setLoading(true);
@@ -75,6 +69,7 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
         username: email, email: email, password: password,
         firstName: firstName, lastName: lastName, phone: phone,
         agreedToMarketing: agreedToMarketing,
+        agreedToTerms: agreedToTerms, // This is our age gate + terms
       };
 
       const storedRefCode = localStorage.getItem('referralCode');
@@ -111,13 +106,8 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
     }
   };
   
-  // Now this line will work correctly because the function above has a return value.
   const { progress, barColor, textColor, label } = getStrengthIndicator();
 
-  // --- END OF CORRECTED LOGIC SECTION ---
-
-
-  // --- The JSX remains the same as the previous step ---
   return (
     <Card className="w-full max-w-sm text-left">
       <form onSubmit={handleSubmit}>
@@ -185,14 +175,17 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
             <Label htmlFor="phone">Phone Number</Label>
             <Input id="phone" type="tel" placeholder="(123) 456-7890" required value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" />
           </div>
+
+          {/* --- FIX: Combined Age Gate and Terms Checkbox --- */}
           <div className="items-top flex space-x-2">
             <input type="checkbox" id="terms" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="h-4 w-4 mt-1 rounded border-gray-300 text-primary focus:ring-primary" />
             <div className="grid gap-1.5 leading-none">
                 <label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    I agree to the <a href="/terms" target="_blank" className="underline text-primary">Terms and Conditions</a>.
+                    I certify that I am 21+ and agree to the <a href="/terms" target="_blank" className="underline text-primary">Terms and Conditions</a>.
                 </label>
             </div>
           </div>
+
           <div className="items-top flex space-x-2">
             <input type="checkbox" id="marketing" checked={agreedToMarketing} onChange={e => setAgreedToMarketing(e.target.checked)} className="h-4 w-4 mt-1 rounded border-gray-300 text-primary focus:ring-primary" />
             <label htmlFor="marketing" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
