@@ -2,22 +2,22 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../context/AuthContext';
-import { useModal } from '../../context/ModalContext';
+import { useAuth } from '@/context/AuthContext';
+import { useModal } from '@/context/ModalContext';
 import { showToast } from '../../components/CustomToast';
 import { triggerHapticFeedback } from '@/utils/haptics';
 import PageContainer from '../../components/PageContainer';
-import { ArrowPathIcon, QrCodeIcon, CameraIcon, GiftIcon, StarIcon } from '@heroicons/react/24/outline'; // Updated icons
+import { ArrowPathIcon, QrCodeIcon, CameraIcon, GiftIcon, StarIcon } from '@heroicons/react/24/outline';
 
 // --- SHADCN IMPORTS ---
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 // --- END IMPORTS ---
 
 export default function ScanPage() {
     const { login } = useAuth();
     const router = useRouter();
-    const { openWelcomeModal, triggerConfetti } = useModal();
+    const { openWelcomeModal, triggerConfetti, openReportScanModal } = useModal(); // --- 1. GET THE NEW MODAL FUNCTION ---
     
     const [view, setView] = useState('landing');
     const [scannerError, setScannerError] = useState('');
@@ -61,12 +61,12 @@ export default function ScanPage() {
         }
         setView('processing');
 
+        let code = null;
         try {
             const url = new URL(urlText);
-            const code = url.searchParams.get('code');
+            code = url.searchParams.get('code'); // Get the code early for error reporting
             if (!code) throw new Error("Invalid QR code format.");
             
-            // NOTE: We need a service function for this. We'll use axios directly for now.
             const api = (await import('@/utils/axiosConfig')).default;
             const response = await api.post(`${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1/claim`, { code });
             
@@ -85,10 +85,18 @@ export default function ScanPage() {
                 router.push('/');
             }
         } catch (err) {
+            const errorCode = err.response?.data?.code;
             const errorMessage = err.response?.data?.message || 'Failed to claim code.';
-            showToast('error', 'Scan Failed', errorMessage);
+            
+            // --- 2. IMPLEMENT THE MODAL TRIGGER LOGIC ---
+            if (errorCode === 'rest_code_already_used' || errorCode === 'rest_code_invalid') {
+                openReportScanModal(code); // Pass the code that failed
+                // We don't push to router here, the modal will handle user flow
+            } else {
+                showToast('error', 'Scan Failed', errorMessage);
+                router.push('/');
+            }
             triggerHapticFeedback();
-            router.push('/');
         }
     };
 

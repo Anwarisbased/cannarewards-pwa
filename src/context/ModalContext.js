@@ -6,6 +6,7 @@ import WelcomeModal from '../components/WelcomeModal.js';
 import ConfettiBlast from '../components/ConfettiBlast.js';
 import EditProfileModal from '@/components/EditProfileModal';
 import ContentModal from '@/components/ContentModal';
+import ReportFailedScanModal from '@/components/ReportFailedScanModal'; // --- 1. IMPORT NEW MODAL ---
 import { Dialog } from '@/components/ui/dialog';
 import { useAuth } from './AuthContext.js';
 
@@ -22,6 +23,10 @@ export function ModalProvider({ children }) {
     // State for Content Modal (stores the page slug to fetch)
     const [contentModalSlug, setContentModalSlug] = useState(null);
 
+    // --- 2. ADD STATE FOR FAILED SCAN MODAL ---
+    const [isReportScanOpen, setIsReportScanOpen] = useState(false);
+    const [failedScanCode, setFailedScanCode] = useState(null);
+
     const { login } = useAuth();
 
     // Edit Profile Modal Functions
@@ -32,8 +37,17 @@ export function ModalProvider({ children }) {
     const openContentModal = (slug) => setContentModalSlug(slug);
     const closeContentModal = () => setContentModalSlug(null);
 
+    // --- 3. ADD HANDLERS FOR FAILED SCAN MODAL ---
+    const openReportScanModal = (code) => {
+        setFailedScanCode(code);
+        setIsReportScanOpen(true);
+    };
+    const closeReportScanModal = () => {
+        setIsReportScanOpen(false);
+        setFailedScanCode(null);
+    };
+
     const handleProfileUpdate = () => {
-        // After a successful update, silently re-fetch user data
         const currentToken = localStorage.getItem('authToken');
         if (currentToken) {
             login(currentToken, true); // silent login
@@ -61,7 +75,8 @@ export function ModalProvider({ children }) {
         openEditProfileModal,
         closeEditProfileModal,
         openContentModal,
-        closeContentModal
+        closeContentModal,
+        openReportScanModal, // Expose the new function
     };
 
     return (
@@ -90,6 +105,11 @@ export function ModalProvider({ children }) {
             {/* Dialog for Dynamic Page Content */}
             <Dialog open={!!contentModalSlug} onOpenChange={(isOpen) => !isOpen && closeContentModal()}>
                 {contentModalSlug && <ContentModal pageSlug={contentModalSlug} />}
+            </Dialog>
+
+            {/* --- 4. ADD DIALOG FOR FAILED SCAN REPORT --- */}
+            <Dialog open={isReportScanOpen} onOpenChange={setIsReportScanOpen}>
+                {isReportScanOpen && <ReportFailedScanModal failedCode={failedScanCode} closeModal={closeReportScanModal} />}
             </Dialog>
 
         </ModalContext.Provider>

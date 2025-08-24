@@ -1,140 +1,197 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { getProducts } from '@/services/woocommerceService';
-import CatalogSkeleton from '../../components/CatalogSkeleton';
-import ImageWithLoader from '../../components/ImageWithLoader';
-import PageContainer from '../../components/PageContainer';
-import { MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline'; // Added PlusIcon
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext'; // CORRECTED PATH
+import { useModal } from '@/context/ModalContext'; // CORRECTED PATH
+import { getProductById } from '@/services/woocommerceService';
+import { redeemReward } from '@/services/rewardsService';
+import ProductDetailSkeleton from '@/components/ProductDetailSkeleton'; // CORRECTED PATH
+import ImageWithLoader from '@/components/ImageWithLoader'; // CORRECTED PATH
+import DynamicHeader from '@/components/DynamicHeader'; // CORRECTED PATH
+import ShippingFormModal from '@/components/ShippingFormModal'; // CORRECTED PATH
+import SuccessModal from '@/components/SuccessModal'; // CORRECTED PATH
+import { showToast } from '@/components/CustomToast'; // CORRECTED PATH
+import { triggerHapticFeedback } from '@/utils/haptics'; // CORRECTED PATH
 
 // --- SHADCN IMPORTS ---
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 // --- END IMPORTS ---
 
-// --- Refactored ProductCard Component ---
-function ProductCard({ product }) {
-    const imageUrl = product.images?.[0]?.src || 'https://via.placeholder.com/300';
 
-    return (
-        <Link href={`/catalog/${product.id}`} className="block group">
-            <Card className="overflow-hidden h-full flex flex-col">
-                <CardContent className="p-0 flex-grow">
-                    <div className="relative">
-                        <AspectRatio ratio={1 / 1}>
-                            <ImageWithLoader 
-                                src={imageUrl} 
-                                alt={product.name} 
-                                className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
-                            />
-                        </AspectRatio>
-                        <div className="absolute bottom-2 right-2 bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
-                            <PlusIcon className="w-5 h-5" />
-                        </div>
-                    </div>
-                </CardContent>
-                <CardFooter className="p-3 flex-col items-start">
-                    <h3 className="text-sm font-medium truncate text-foreground w-full">{product.name}</h3>
-                    <p className="text-base font-semibold text-foreground">{product.points_cost} Points</p>
-                </CardFooter>
-            </Card>
-        </Link>
-    );
-}
-
-export default function CatalogPage() {
-    const { isAuthenticated, loading: authLoading } = useAuth();
+export default function ProductDetailPage() {
+    const { user, loading: authLoading, updateUserPoints, login } = useAuth();
+    const { triggerConfetti } = useModal();
     const router = useRouter();
-    const [allProducts, setAllProducts] = useState([]);
-    const [filteredProducts, setFilteredProducts] = useState([]);
+    const params = useParams();
+    const searchParams = useSearchParams();
+    const { productId } = params;
+
+    const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
+    const [isFirstScan, setIsFirstScan] = useState(false);
+    const [showShippingModal, setShowShippingModal] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [redeemError, setRedeemError] = useState('');
+    const [isRedeeming, setIsRedeeming] = useState(false);
 
     useEffect(() => {
-        if (!authLoading && !isAuthenticated) {
-            router.push('/');
-            return;
+        setIsFirstScan(searchParams.get('first_scan') === 'true');
+    }, [searchParams]);
+
+    useEffect(() => {
+        if (isFirstScan) {
+            triggerConfetti();
         }
+    }, [isFirstScan, triggerConfetti]);
 
-        if (isAuthenticated) {
-            const fetchProducts = async () => {
+    useEffect(() => {
+        if (productId) {
+            const fetchProduct = async () => {
+                setLoading(true);
                 try {
-                    const productsFromApi = await getProducts();
-                    const formattedProducts = productsFromApi.map(p => {
-                        const pointsMeta = p.meta_data.find(meta => meta.key === 'points_cost');
-                        return { 
-                            id: p.id, 
-                            name: p.name, 
-                            images: p.images, 
-                            points_cost: pointsMeta ? parseInt(pointsMeta.value) : null 
-                        };
-                    }).filter(p => p.points_cost !== null);
-
-                    setAllProducts(formattedProducts);
-                    setFilteredProducts(formattedProducts);
-                } catch (err) {
-                    console.error("Failed to fetch products:", err);
-                    setError(err.message || 'Could not load rewards. Please try again later.');
+                    const productData = await getProductById(productId);
+                    const pointsMeta = productData.meta_data.find(meta => meta.key === 'points_cost');
+                    const formattedProduct = {
+                        id: productData.id,
+                        name: productData.name,
+                        images: productData.images,
+                        description: productData.description,
+                        points_cost: pointsMeta ? parseInt(pointsMeta.value, 10) : null,
+                    };
+                    setProduct(formattedProduct);
+                } catch (error) {
+                    console.error("Failed to fetch product:", error);
+                    setRedeemError("Could not load product details.");
                 } finally {
                     setLoading(false);
                 }
             };
-            fetchProducts();
+            fetchProduct();
         }
-    }, [isAuthenticated, authLoading, router]);
-    
-    useEffect(() => {
-        if (searchTerm === '') {
-            setFilteredProducts(allProducts);
-        } else {
-            const filtered = allProducts.filter(product => 
-                product.name.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-            setFilteredProducts(filtered);
+    }, [productId]);
+
+    const handleRedeem = () => {
+        triggerHapticFeedback();
+        if (user.points >= product.points_cost) {
+            setShowShippingModal(true);
         }
-    }, [searchTerm, allProducts]);
+    };
+
+    const handleShippingSubmit = async (shippingDetails) => {
+        setIsRedeeming(true);
+        setShowShippingModal(false);
+        try {
+            const result = await redeemReward(product.id, shippingDetails);
+            updateUserPoints(result.newBalance);
+            setShowSuccessModal(true);
+            
+            // Also refresh full user data in background after a successful redemption
+            const currentToken = localStorage.getItem('authToken');
+            if (currentToken) {
+                login(currentToken, true); // silent login
+            }
+
+        } catch (error) {
+            showToast('error', 'Redemption Failed', error.message);
+        } finally {
+            setIsRedeeming(false);
+        }
+    };
 
     if (authLoading || loading) {
-        return <CatalogSkeleton />;
+        return <ProductDetailSkeleton />;
+    }
+
+    if (!product) {
+        return (
+            <div className="text-center p-10">
+                <h1 className="text-2xl font-bold">Product Not Found</h1>
+                <p>{redeemError || "The reward you are looking for does not exist or is no longer available."}</p>
+                <Button onClick={() => router.back()} className="mt-4">Go Back</Button>
+            </div>
+        );
     }
     
-    return (
-        <PageContainer>
-            <div className="relative mb-6">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input 
-                    type="text"
-                    placeholder="Search for rewards"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-secondary border-none pl-10 pr-10" 
-                />
-                {searchTerm && (
-                    <XMarkIcon 
-                        className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground cursor-pointer" 
-                        onClick={() => setSearchTerm('')}
-                    />
-                )}
-            </div>
-            
-            {error && <p className="text-destructive text-center">{error}</p>}
-            
-            {!error && filteredProducts.length === 0 && (
-                <p className="text-center text-muted-foreground mt-8">
-                    {searchTerm ? `No rewards found for "${searchTerm}"` : "No rewards available yet."}
-                </p>
-            )}
+    const canAfford = user && product.points_cost && user.points >= product.points_cost;
+    const pointsNeeded = product.points_cost ? product.points_cost - user.points : 0;
+    const imageUrl = product.images?.[0]?.src || 'https://via.placeholder.com/300';
 
-            <div className="grid grid-cols-2 gap-4">
-                {filteredProducts.map(product => (
-                    <ProductCard key={product.id} product={product} />
-                ))}
-            </div>
-        </PageContainer>
+    return (
+        <>
+            <main className="bg-white">
+                <div className="w-full max-w-md mx-auto">
+                    <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm">
+                        <DynamicHeader title="" backLink="/catalog" />
+                    </div>
+                    
+                    <div className="p-4">
+                        <Card className="mb-6 overflow-hidden border-none shadow-none">
+                            <CardContent className="p-0">
+                                <AspectRatio ratio={1 / 1}>
+                                    <ImageWithLoader src={imageUrl} alt={product.name} className="w-full h-full object-cover rounded-lg" />
+                                </AspectRatio>
+                            </CardContent>
+                        </Card>
+
+                        {isFirstScan && (
+                            <div className="text-center mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-400">
+                                <h2 className="text-xl font-bold text-yellow-800">Congratulations!</h2>
+                                <p className="text-yellow-700">You've unlocked this reward with your first scan!</p>
+                            </div>
+                        )}
+                        
+                        <h1 className="text-3xl font-bold text-foreground mb-2">{product.name}</h1>
+                        <p className="text-2xl font-semibold text-primary mb-6">{product.points_cost.toLocaleString()} Points</p>
+
+                        <Button 
+                            onClick={handleRedeem} 
+                            disabled={!canAfford || isRedeeming}
+                            size="lg"
+                            className="w-full h-14 text-lg"
+                        >
+                            {isRedeeming ? 'Processing...' : (
+                                isFirstScan ? 'Claim Your Welcome Gift!' : (
+                                    canAfford ? `Redeem for ${product.points_cost.toLocaleString()} Points` : `Earn ${pointsNeeded.toLocaleString()} more points`
+                                )
+                            )}
+                        </Button>
+                        
+                        <Separator className="my-8" />
+
+                        <div className="space-y-4">
+                            <h2 className="text-xl font-semibold text-foreground">Description</h2>
+                            <div 
+                                className="prose prose-sm max-w-none text-muted-foreground" 
+                                dangerouslySetInnerHTML={{ __html: product.description || "<p>No description available for this reward.</p>" }} 
+                            />
+                        </div>
+                    </div>
+                </div>
+            </main>
+            
+            {showShippingModal && (
+                <ShippingFormModal 
+                    onSubmit={handleShippingSubmit}
+                    onCancel={() => setShowShippingModal(false)}
+                    currentUser={user}
+                />
+            )}
+            
+            {showSuccessModal && (
+                <SuccessModal
+                    title="Redemption Successful!"
+                    message="Your reward is on its way. You can view the order details in your profile."
+                    buttonLabel="View My Orders"
+                    onButtonClick={() => {
+                        setShowSuccessModal(false);
+                        router.push('/orders');
+                    }}
+                />
+            )}
+        </>
     );
 }

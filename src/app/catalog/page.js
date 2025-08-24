@@ -1,39 +1,54 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/context/AuthContext'; // CORRECTED PATH
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-// --- 1. IMPORT THE SERVICE ---
 import { getProducts } from '@/services/woocommerceService';
-import AnimatedPage from '../../components/AnimatedPage';
-import CatalogSkeleton from '../../components/CatalogSkeleton';
-import ImageWithLoader from '../../components/ImageWithLoader';
-import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import PageContainer from '../../components/PageContainer';
+import CatalogSkeleton from '@/components/CatalogSkeleton'; // CORRECTED PATH
+import ImageWithLoader from '@/components/ImageWithLoader'; // CORRECTED PATH
+import PageContainer from '@/components/PageContainer'; // CORRECTED PATH
+import { MagnifyingGlassIcon, PlusIcon, XMarkIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 
-// ProductCard component remains unchanged
+// --- SHADCN IMPORTS ---
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+// --- END IMPORTS ---
+
+// --- Refactored ProductCard Component ---
 function ProductCard({ product }) {
-    const imageUrl = product.images && product.images[0] ? product.images[0].src : 'https://via.placeholder.com/150';
+    const imageUrl = product.images?.[0]?.src || 'https://via.placeholder.com/300';
 
     return (
         <Link href={`/catalog/${product.id}`} className="block group">
-            <div className="space-y-2">
-                <div className="relative w-full aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                    <ImageWithLoader 
-                        src={imageUrl} 
-                        alt={product.name} 
-                        className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
-                    />
-                    <div className="absolute bottom-3 right-3 bg-black text-white w-10 h-10 rounded-full flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
-                        <span className="text-2xl font-light">+</span>
+            <Card className="overflow-hidden h-full flex flex-col">
+                <CardContent className="p-0 flex-grow">
+                    <div className="relative">
+                        <AspectRatio ratio={1 / 1}>
+                            <ImageWithLoader 
+                                src={imageUrl} 
+                                alt={product.name} 
+                                className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
+                            />
+                        </AspectRatio>
+                        {product.tierRequired && (
+                            <Badge variant="secondary" className="absolute top-2 left-2">
+                                <LockClosedIcon className="w-3 h-3 mr-1.5" />
+                                {product.tierRequired} Exclusive
+                            </Badge>
+                        )}
+                        <div className="absolute bottom-2 right-2 bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
+                            <PlusIcon className="w-5 h-5" />
+                        </div>
                     </div>
-                </div>
-                <div className="px-1">
-                    <h3 className="text-sm font-medium truncate text-gray-800">{product.name}</h3>
-                    <p className="text-base font-semibold mt-1 text-gray-900">{product.points_cost} Points</p>
-                </div>
-            </div>
+                </CardContent>
+                <CardFooter className="p-3 flex-col items-start">
+                    <h3 className="text-sm font-medium truncate text-foreground w-full">{product.name}</h3>
+                    <p className="text-base font-semibold text-foreground">{product.points_cost} Points</p>
+                </CardFooter>
+            </Card>
         </Link>
     );
 }
@@ -56,16 +71,16 @@ export default function CatalogPage() {
         if (isAuthenticated) {
             const fetchProducts = async () => {
                 try {
-                    // --- 2. USE THE CLEAN SERVICE FUNCTION ---
                     const productsFromApi = await getProducts();
-                    
                     const formattedProducts = productsFromApi.map(p => {
                         const pointsMeta = p.meta_data.find(meta => meta.key === 'points_cost');
+                        const tierMeta = p.meta_data.find(meta => meta.key === '_required_rank');
                         return { 
                             id: p.id, 
                             name: p.name, 
                             images: p.images, 
-                            points_cost: pointsMeta ? parseInt(pointsMeta.value) : null 
+                            points_cost: pointsMeta ? parseInt(pointsMeta.value) : null,
+                            tierRequired: tierMeta ? tierMeta.value : null
                         };
                     }).filter(p => p.points_cost !== null);
 
@@ -73,7 +88,6 @@ export default function CatalogPage() {
                     setFilteredProducts(formattedProducts);
                 } catch (err) {
                     console.error("Failed to fetch products:", err);
-                    // --- 3. USE THE STANDARDIZED ERROR MESSAGE ---
                     setError(err.message || 'Could not load rewards. Please try again later.');
                 } finally {
                     setLoading(false);
@@ -83,7 +97,6 @@ export default function CatalogPage() {
         }
     }, [isAuthenticated, authLoading, router]);
     
-    // Search logic remains unchanged
     useEffect(() => {
         if (searchTerm === '') {
             setFilteredProducts(allProducts);
@@ -99,41 +112,38 @@ export default function CatalogPage() {
         return <CatalogSkeleton />;
     }
     
-    // JSX for the page remains unchanged
     return (
-        <AnimatedPage>
-            <PageContainer>
-                <div className="relative mb-6">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input 
-                        type="text"
-                        placeholder="Search for rewards"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-gray-100 border-none rounded-lg py-3 pl-10 pr-10" 
+        <PageContainer>
+            <div className="relative mb-6">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input 
+                    type="text"
+                    placeholder="Search for rewards"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-secondary border-none pl-10 pr-10" 
+                />
+                {searchTerm && (
+                    <XMarkIcon 
+                        className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground cursor-pointer" 
+                        onClick={() => setSearchTerm('')}
                     />
-                    {searchTerm && (
-                        <XMarkIcon 
-                            className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 cursor-pointer" 
-                            onClick={() => setSearchTerm('')}
-                        />
-                    )}
-                </div>
-                
-                {error && <p className="text-red-500 text-center">{error}</p>}
-                
-                {!error && filteredProducts.length === 0 && (
-                    <p className="text-center text-gray-500 mt-8">
-                        {searchTerm ? `No rewards found for "${searchTerm}"` : "No rewards available yet."}
-                    </p>
                 )}
+            </div>
+            
+            {error && <p className="text-destructive text-center">{error}</p>}
+            
+            {!error && filteredProducts.length === 0 && (
+                <p className="text-center text-muted-foreground mt-8">
+                    {searchTerm ? `No rewards found for "${searchTerm}"` : "No rewards available yet."}
+                </p>
+            )}
 
-                <div className="grid grid-cols-2 gap-4">
-                    {filteredProducts.map(product => (
-                        <ProductCard key={product.id} product={product} />
-                    ))}
-                </div>
-            </PageContainer>
-        </AnimatedPage>
+            <div className="grid grid-cols-2 gap-4">
+                {filteredProducts.map(product => (
+                    <ProductCard key={product.id} product={product} />
+                ))}
+            </div>
+        </PageContainer>
     );
 }
