@@ -1,10 +1,8 @@
 import api from '@/utils/axiosConfig';
 
-// REMOVED: const API_BASE = ...
+const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1`;
 
 export const loginUser = async (email, password) => {
-    // CONSTRUCT URL INSIDE THE FUNCTION
-    const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1`;
     try {
         const response = await api.post(`${API_BASE}/login`, { email, password });
         return response.data;
@@ -14,8 +12,6 @@ export const loginUser = async (email, password) => {
 };
 
 export const registerUser = async (registrationData) => {
-    // CONSTRUCT URL INSIDE THE FUNCTION
-    const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1`;
     try {
         const response = await api.post(`${API_BASE}/register`, registrationData);
         return response.data;
@@ -25,8 +21,6 @@ export const registerUser = async (registrationData) => {
 };
 
 export const getMyData = async () => {
-    // CONSTRUCT URL INSIDE THE FUNCTION
-    const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1`;
     try {
         const response = await api.get(`${API_BASE}/me`);
         return response.data;
@@ -36,12 +30,30 @@ export const getMyData = async () => {
 };
 
 export const updateUserProfile = async (profileData) => {
-    // CONSTRUCT URL INSIDE THE FUNCTION
-    const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1`;
     try {
         const response = await api.post(`${API_BASE}/me/update`, profileData);
         return response.data;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Failed to update profile.');
+    }
+};
+
+// --- NEWLY ADDED: Request Magic Link Function ---
+export const requestMagicLink = async (email) => {
+    try {
+        const response = await api.post(`${API_BASE}/request-magic-link`, { email });
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Failed to request login link.');
+    }
+};
+
+// --- NEWLY ADDED: Validate Magic Link Function ---
+export const validateMagicLink = async (token) => {
+    try {
+        const response = await api.post(`${API_BASE}/validate-magic-link`, { token });
+        return response.data; // This should return a JWT token on success
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'The magic link is invalid or has expired.');
     }
 };
