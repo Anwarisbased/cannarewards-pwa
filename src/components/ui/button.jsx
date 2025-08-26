@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva } from "class-variance-authority";
+import { motion } from "framer-motion"; // --- 1. IMPORT MOTION ---
 
 import { cn } from "@/components/lib/utils"
 
@@ -34,11 +35,14 @@ const buttonVariants = cva(
 )
 
 const Button = React.forwardRef(({ className, variant, size, asChild = false, ...props }, ref) => {
-  const Comp = asChild ? Slot : "button"
+  // --- 2. CHANGE "button" TO motion.button ---
+  const Comp = asChild ? Slot : motion.button;
   return (
     <Comp
       className={cn(buttonVariants({ variant, size, className }))}
       ref={ref}
+      // --- 3. ADD THE whileTap PROP FOR THE SQUISH EFFECT ---
+      whileTap={{ scale: 0.95 }}
       {...props} />
   );
 })

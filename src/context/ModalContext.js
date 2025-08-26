@@ -6,38 +6,30 @@ import WelcomeModal from '../components/WelcomeModal.js';
 import ConfettiBlast from '../components/ConfettiBlast.js';
 import EditProfileModal from '@/components/EditProfileModal';
 import ContentModal from '@/components/ContentModal';
-import ReportFailedScanModal from '@/components/ReportFailedScanModal'; // --- 1. IMPORT NEW MODAL ---
+import ReportFailedScanModal from '@/components/ReportFailedScanModal';
+import RankUpModal from '@/components/RankUpModal'; // --- 1. IMPORT NEW MODAL ---
 import { Dialog } from '@/components/ui/dialog';
 import { useAuth } from './AuthContext.js';
-
 
 const ModalContext = createContext();
 
 export function ModalProvider({ children }) {
     const [welcomeBonusDetails, setWelcomeBonusDetails] = useState(null);
     const [showConfetti, setShowConfetti] = useState(false);
-    
-    // State for Edit Profile Modal
     const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
-    
-    // State for Content Modal (stores the page slug to fetch)
     const [contentModalSlug, setContentModalSlug] = useState(null);
-
-    // --- 2. ADD STATE FOR FAILED SCAN MODAL ---
     const [isReportScanOpen, setIsReportScanOpen] = useState(false);
     const [failedScanCode, setFailedScanCode] = useState(null);
+    const [rankUpDetails, setRankUpDetails] = useState(null); // --- 2. ADD STATE FOR RANK UP ---
 
     const { login } = useAuth();
 
-    // Edit Profile Modal Functions
     const openEditProfileModal = () => setIsEditProfileOpen(true);
     const closeEditProfileModal = () => setIsEditProfileOpen(false);
     
-    // Content Modal Functions
     const openContentModal = (slug) => setContentModalSlug(slug);
     const closeContentModal = () => setContentModalSlug(null);
 
-    // --- 3. ADD HANDLERS FOR FAILED SCAN MODAL ---
     const openReportScanModal = (code) => {
         setFailedScanCode(code);
         setIsReportScanOpen(true);
@@ -47,6 +39,14 @@ export function ModalProvider({ children }) {
         setFailedScanCode(null);
     };
 
+    // --- 3. ADD HANDLERS FOR RANK UP MODAL ---
+    const openRankUpModal = (details) => {
+        setRankUpDetails(details);
+    };
+    const closeRankUpModal = () => {
+        setRankUpDetails(null);
+    };
+
     const handleProfileUpdate = () => {
         const currentToken = localStorage.getItem('authToken');
         if (currentToken) {
@@ -54,7 +54,6 @@ export function ModalProvider({ children }) {
         }
     };
 
-    // Welcome Modal Functions
     const openWelcomeModal = (bonusDetails) => {
         setWelcomeBonusDetails(bonusDetails);
     };
@@ -62,7 +61,6 @@ export function ModalProvider({ children }) {
         setWelcomeBonusDetails(null);
     };
 
-    // Confetti Function
     const triggerConfetti = () => {
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 4000); 
@@ -76,7 +74,8 @@ export function ModalProvider({ children }) {
         closeEditProfileModal,
         openContentModal,
         closeContentModal,
-        openReportScanModal, // Expose the new function
+        openReportScanModal,
+        openRankUpModal, // --- 4. EXPOSE THE NEW FUNCTION ---
     };
 
     return (
@@ -90,9 +89,15 @@ export function ModalProvider({ children }) {
                         closeModal={closeWelcomeModal} 
                     />
                 )}
+                {/* --- 5. RENDER THE RANK UP MODAL --- */}
+                {rankUpDetails && (
+                    <RankUpModal
+                        details={rankUpDetails}
+                        closeModal={closeRankUpModal}
+                    />
+                )}
             </AnimatePresence>
 
-            {/* Dialog for Edit Profile */}
             <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
                 {isEditProfileOpen && (
                     <EditProfileModal 
@@ -102,12 +107,10 @@ export function ModalProvider({ children }) {
                 )}
             </Dialog>
 
-            {/* Dialog for Dynamic Page Content */}
             <Dialog open={!!contentModalSlug} onOpenChange={(isOpen) => !isOpen && closeContentModal()}>
                 {contentModalSlug && <ContentModal pageSlug={contentModalSlug} />}
             </Dialog>
 
-            {/* --- 4. ADD DIALOG FOR FAILED SCAN REPORT --- */}
             <Dialog open={isReportScanOpen} onOpenChange={setIsReportScanOpen}>
                 {isReportScanOpen && <ReportFailedScanModal failedCode={failedScanCode} closeModal={closeReportScanModal} />}
             </Dialog>

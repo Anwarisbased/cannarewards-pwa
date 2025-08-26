@@ -21,7 +21,7 @@ export default function ProfilePage() {
 
     if (loading || !isAuthenticated) {
         return (
-            <main className="p-4 bg-white min-h-screen animate-pulse">
+            <div className="p-4 bg-white min-h-screen animate-pulse">
                 <div className="w-full max-w-md mx-auto">
                     <div className="flex flex-col items-center p-4 mb-6 text-center">
                         <div className="w-24 h-24 bg-gray-200 rounded-full mb-4"></div>
@@ -32,7 +32,7 @@ export default function ProfilePage() {
                     <div className="rounded-lg h-24 bg-gray-200 mb-6"></div>
                     <div className="rounded-lg h-14 bg-gray-200"></div>
                 </div>
-            </main>
+            </div>
         );
     }
 
@@ -40,7 +40,8 @@ export default function ProfilePage() {
 
     return (
         <AnimatedPage>
-            <main 
+            {/* --- MODIFIED: Changed <main> to <div> --- */}
+            <div 
               className="p-4 bg-white min-h-screen"
               style={{
                 paddingTop: `env(safe-area-inset-top)`,
@@ -83,7 +84,7 @@ export default function ProfilePage() {
                         </button>
                     </div>
                 </div>
-            </main>
+            </div>
         </AnimatedPage>
     );
 }

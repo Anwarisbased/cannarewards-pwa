@@ -1,7 +1,5 @@
 import api from '@/utils/axiosConfig';
 
-// REMOVED: const API_BASE = ...
-
 export const claimRewardCode = async (code) => {
     const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1`;
     try {
@@ -72,11 +70,16 @@ export const getMyReferrals = async () => {
     }
 };
 
+/**
+ * Prepares a referral "nudge" for a user.
+ * @param {string} refereeEmail The email of the user to nudge.
+ * @returns {Promise<object>} An object containing success status and an array of `share_options`.
+ */
 export const sendReferralNudge = async (refereeEmail) => {
     const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1`;
     try {
         const response = await api.post(`${API_BASE}/me/referrals/nudge`, { email: refereeEmail });
-        return response.data;
+        return response.data; // Expected to contain { success: true, share_options: [...] }
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Failed to prepare nudge.');
     }

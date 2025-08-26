@@ -6,22 +6,21 @@ import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { triggerHapticFeedback } from '@/utils/haptics';
 import { 
-    HomeIcon as HomeOutline, 
-    CircleStackIcon as CatalogOutline, 
+    HomeIcon, 
+    CircleStackIcon, 
     QrCodeIcon as ScanOutline, 
-    TrophyIcon as RewardsOutline,
-    UserIcon as UserOutline
-} from '@heroicons/react/24/outline';
+    TrophyIcon,
+    UserIcon
+} from '@heroicons/react/24/outline'; // --- 1. USE OUTLINE FOR ALL ---
 import { 
     HomeIcon as HomeSolid, 
     CircleStackIcon as CatalogSolid, 
     TrophyIcon as RewardsSolid,
     UserIcon as UserSolid
-} from '@heroicons/react/24/solid';
+} from '@heroicons/react/24/solid'; // --- 2. USE SOLID FOR ALL ACTIVE ---
 
 function NavItem({ href, label, IconOutline, IconSolid }) {
     const pathname = usePathname();
-    // Make the profile tab active even on sub-pages like /profile/edit
     const isActive = href === '/' ? pathname === href : pathname.startsWith(href);
     const Icon = isActive ? IconSolid : IconOutline;
     const textStyle = isActive ? 'text-primary font-semibold' : 'text-gray-500';
@@ -46,29 +45,26 @@ export default function NavBar() {
 
     return (
         <nav 
-          className="fixed bottom-0 left-0 right-0 h-20 z-20" // Increased height for the button overlap
-          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} // Handle iPhone home bar
+          className="fixed bottom-0 left-0 right-0 h-20 z-20"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
             <div className="relative max-w-md mx-auto h-full">
-                {/* The main nav bar background and items */}
                 <div className="absolute bottom-0 left-0 right-0 h-16 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.05)] flex justify-around items-center">
-                    {/* Left side items */}
                     <div className="flex-1 flex justify-around">
-                        <NavItem href="/" label="Home" IconOutline={HomeOutline} IconSolid={HomeSolid} />
-                        <NavItem href="/catalog" label="Catalog" IconOutline={CatalogOutline} IconSolid={CatalogSolid} />
+                        {/* --- 3. UPDATED TO USE CONSISTENT ICONS --- */}
+                        <NavItem href="/" label="Home" IconOutline={HomeIcon} IconSolid={HomeSolid} />
+                        <NavItem href="/catalog" label="Catalog" IconOutline={CircleStackIcon} IconSolid={CatalogSolid} />
                     </div>
 
-                    {/* Placeholder to create space for the center button */}
                     <div className="w-20"></div> 
 
-                    {/* Right side items */}
                     <div className="flex-1 flex justify-around">
-                        <NavItem href="/my-points" label="My Points" IconOutline={RewardsOutline} IconSolid={RewardsSolid} />
-                        <NavItem href="/profile" label="Profile" IconOutline={UserOutline} IconSolid={UserSolid} />
+                        {/* --- 4. UPDATED TO USE CONSISTENT ICONS --- */}
+                        <NavItem href="/my-points" label="My Points" IconOutline={TrophyIcon} IconSolid={RewardsSolid} />
+                        <NavItem href="/profile" label="Profile" IconOutline={UserIcon} IconSolid={UserSolid} />
                     </div>
                 </div>
 
-                {/* The floating scan button, positioned in the center */}
                 <Link href="/scan" onClick={triggerHapticFeedback} className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30">
                     <motion.div 
                         whileTap={{ scale: 0.95 }}

@@ -6,6 +6,7 @@ import { ModalProvider } from '../context/ModalContext';
 import { ThemeProvider } from '../context/ThemeContext';
 import NavBar from '../components/NavBar';
 import Header from '../components/Header';
+import AppEventHandler from '@/components/AppEventHandler';
 import { Toaster } from 'react-hot-toast';
 import 'nprogress/nprogress.css';
 import './globals.css';
@@ -55,6 +56,7 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <ThemeProvider>
             <ModalProvider>
+              <AppEventHandler />
               <Toaster />
               <Header />
               <main>

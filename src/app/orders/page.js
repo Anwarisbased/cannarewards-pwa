@@ -7,17 +7,13 @@ import { getMyOrders } from '@/services/rewardsService';
 import EmptyState from '../../components/EmptyState';
 import DynamicHeader from '../../components/DynamicHeader';
 import ImageWithLoader from '../../components/ImageWithLoader';
+import StaggeredList from '@/components/StaggeredList';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-// --- CORRECTED LIBRARY IMPORT ---
 import PullToRefresh from 'react-simple-pull-to-refresh';
-// --- END CORRECTED IMPORT ---
 
-const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.07 } } };
-const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } } };
 const TABS = { ONGOING: 'Ongoing', COMPLETED: 'Completed', CANCELLED: 'Cancelled' };
 const STATUS_MAP = { [TABS.ONGOING]: ['Processing'], [TABS.COMPLETED]: ['Completed'], [TABS.CANCELLED]: ['Cancelled', 'Failed', 'Refunded'] };
 
@@ -57,7 +53,8 @@ export default function OrdersPage() {
 
     return (
         <PullToRefresh onRefresh={handleRefresh}>
-            <main className="bg-white min-h-screen">
+            {/* --- MODIFIED: Changed <main> to <div> --- */}
+            <div className="bg-white min-h-screen">
                 <div className="w-full max-w-md mx-auto">
                     <div className="sticky top-0 z-10 bg-white pt-4 px-4 border-b border-gray-200">
                         <DynamicHeader title="My Orders" backLink="/profile" />
@@ -73,41 +70,39 @@ export default function OrdersPage() {
                     </div>
                     <div className="p-4" style={{ paddingBottom: '5rem' }}>
                         {filteredOrders.length > 0 ? (
-                            <motion.div className="space-y-4" variants={containerVariants} initial="hidden" animate="visible" key={activeTab}>
+                            <StaggeredList className="space-y-4" key={activeTab}>
                                 {filteredOrders.map(order => (
-                                    <motion.div key={order.orderId} variants={itemVariants}>
-                                        <Card>
-                                            <CardContent className="p-4 flex items-center space-x-4">
-                                                <div className="flex-shrink-0 w-20 h-20 bg-secondary rounded-lg flex items-center justify-center overflow-hidden">
-                                                    <ImageWithLoader src={order.imageUrl} alt={order.items} className="w-full h-full object-cover" />
-                                                </div>
-                                                <div className="flex-grow">
-                                                    <div className="flex justify-between items-start">
-                                                        <div>
-                                                            <p className="font-bold text-base text-card-foreground leading-tight">{order.items}</p>
-                                                            <p className="text-sm text-muted-foreground">Order #{order.orderId}</p>
-                                                        </div>
-                                                        <Badge variant={order.status === 'Completed' ? 'default' : 'secondary'}>{order.status}</Badge>
+                                    <Card key={order.orderId}>
+                                        <CardContent className="p-4 flex items-center space-x-4">
+                                            <div className="flex-shrink-0 w-20 h-20 bg-secondary rounded-lg flex items-center justify-center overflow-hidden">
+                                                <ImageWithLoader src={order.imageUrl} alt={order.items} className="w-full h-full object-cover" />
+                                            </div>
+                                            <div className="flex-grow">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <p className="font-bold text-base text-card-foreground leading-tight">{order.items}</p>
+                                                        <p className="text-sm text-muted-foreground">Order #{order.orderId}</p>
                                                     </div>
-                                                    <p className="text-xs text-muted-foreground mt-2">{order.date}</p>
+                                                    <Badge variant={order.status === 'Completed' ? 'default' : 'secondary'}>{order.status}</Badge>
                                                 </div>
-                                            </CardContent>
-                                        </Card>
-                                    </motion.div>
+                                                <p className="text-xs text-muted-foreground mt-2">{order.date}</p>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
                                 ))}
-                            </motion.div>
+                            </StaggeredList>
                         ) : (
                             <EmptyState 
                                 Icon={ShoppingCartIcon}
                                 title={`No ${activeTab.toLowerCase()} orders`}
-                                message="Your orders will appear here once their status changes."
-                                buttonLabel="Browse Rewards"
+                                message="Your redeemed rewards will appear here after you claim them from the catalog."
+                                buttonLabel="Redeem Your First Reward"
                                 buttonHref="/catalog"
                             />
                         )}
                     </div>
                 </div>
-            </main>
+            </div>
         </PullToRefresh>
     );
 }

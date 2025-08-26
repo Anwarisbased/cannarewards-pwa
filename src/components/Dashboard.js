@@ -1,68 +1,38 @@
 'use client';
 
 import { useAuth } from '../context/AuthContext';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { triggerHapticFeedback } from '@/utils/haptics'; // --- 1. Import haptics ---
+import DashboardSkeleton from './DashboardSkeleton';
+import PageContainer from './PageContainer';
+import StatusCard from './dashboard/StatusCard';
+import ActionCard from './dashboard/ActionCard';
+import NextActionCarousel from './dashboard/NextActionCarousel';
 
+/**
+ * The main user dashboard, refactored to be a "Mission Control" hub.
+ * It assembles modular cards to present a user-centric view of their status and actions.
+ */
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
-  if (!user) {
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-black">
-            <p className="text-white">Loading...</p>
-        </div>
-    );
+  // Show a skeleton while the user data is loading to prevent layout shifts.
+  if (loading || !user) {
+    return <DashboardSkeleton />;
   }
 
   return (
-    <motion.div 
-      className="relative flex flex-col justify-between min-h-screen w-full text-white p-8"
-      style={{ 
-        backgroundImage: `url(/dashboard-bg.jpg)`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      }}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 1, ease: 'easeOut' }}
-    >
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent z-0"></div>
+    // We use PageContainer to ensure consistent padding and safe-area handling,
+    // matching the rest of the authenticated app experience.
+    <PageContainer>
+        <div className="space-y-6">
+            {/* 1. The user's current status, at the top */}
+            <StatusCard user={user} />
 
-      <div className="relative z-10 flex flex-col items-center justify-center text-center flex-grow">
-        <motion.h1 
-          className="text-2xl font-light mb-2 tracking-wide"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          Welcome Back,
-        </motion.h1>
-        <motion.h2 
-          className="text-5xl font-bold capitalize"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-        >
-          {user.firstName || 'Member'}
-        </motion.h2>
-      </div>
+            {/* 2. The primary actions, right below for immediate access */}
+            <ActionCard />
 
-      <motion.div 
-        className="relative z-10 w-full"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.6 }}
-      >
-        {/* --- 2. Add onClick to the Link --- */}
-        <Link href="/catalog" className="block" onClick={triggerHapticFeedback}>
-          <button className="w-full bg-white text-black font-bold py-4 px-6 rounded-lg text-lg transform hover:scale-105 transition-transform">
-            Shop Now
-          </button>
-        </Link>
-      </motion.div>
-    </motion.div>
+            {/* 3. The dynamic, personalized suggestions carousel */}
+            <NextActionCarousel user={user} />
+        </div>
+    </PageContainer>
   );
 }

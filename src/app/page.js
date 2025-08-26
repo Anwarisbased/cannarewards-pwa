@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import Image from 'next/image'; // 1. Import the Image component
+import Image from 'next/image';
 import LoginForm from '../components/LoginForm';
 import Dashboard from '../components/Dashboard';
 import RegisterForm from '../components/RegisterForm';
@@ -38,24 +38,22 @@ export default function HomePage() {
 
   if (loading) {
     return (
-        <main className="flex items-center justify-center min-h-screen bg-gray-50">
+        // --- MODIFIED: Removed the <main> tag here ---
+        <div className="flex items-center justify-center min-h-screen bg-gray-50">
             <DashboardSkeleton />
-        </main>
+        </div>
     );
   }
 
-  // This variable holds the content for unauthenticated users (login/register forms)
   const authContent = (
-    // 2. Main container for the auth screen
     <div className="text-center w-full max-w-sm px-4">
-      {/* 3. Brand Logo */}
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, delay: 0.1 }}
       >
         <Image
-          src="/logo.png" // Assumes your logo is in /public/logo.png
+          src="/logo.png"
           alt="CannaRewards Logo"
           width={80}
           height={80}
@@ -63,7 +61,6 @@ export default function HomePage() {
         />
       </motion.div>
       
-      {/* 4. White card container for the forms */}
       <div className="bg-white p-8 rounded-lg shadow-md">
         <AnimatePresence mode="wait">
           <motion.div
@@ -85,8 +82,9 @@ export default function HomePage() {
   );
 
   return (
-    <main className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+    // --- MODIFIED: Removed the <main> tag here ---
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
       {isAuthenticated ? <Dashboard /> : authContent}
-    </main>
+    </div>
   );
 }

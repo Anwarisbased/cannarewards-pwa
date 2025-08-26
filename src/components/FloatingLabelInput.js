@@ -1,51 +1,76 @@
-'use client';
+"use client";
 
-// A beautifully styled floating label input that mimics the target aesthetic.
-export default function FloatingLabelInput({ 
-    id, 
-    label, 
-    value, 
-    onChange, 
-    type = 'text', 
-    autoComplete = 'off', 
-    required = false,
-    disabled = false // Added a disabled prop
-}) {
+import { useState } from "react";
+import { motion } from "framer-motion"; // Using framer-motion as it's already in the project
+import { cn } from "@/components/lib/utils"; // Corrected path for our project structure
+
+const containerVariants = {
+  initial: {},
+  animate: {
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const letterVariants = {
+  initial: {
+    y: 0,
+    color: "hsl(var(--foreground))", // Use theme variable for text color
+  },
+  animate: {
+    y: "-120%",
+    color: "hsl(var(--primary))", // Use theme variable for focused label color
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 20,
+    },
+  },
+};
+
+/**
+ * An input component with a floating label that animates letter by letter.
+ * Adapted from the user-provided component to fit the project's JS and theme structure.
+ * @param {object} props - Extends standard HTML input attributes.
+ * @param {string} props.label - The text for the floating label.
+ */
+export const FloatingLabelInput = ({
+  label,
+  className = "",
+  value,
+  ...props
+}) => {
+  const [isFocused, setIsFocused] = useState(false);
+  const showLabel = isFocused || (value && value.length > 0);
+
   return (
-    <div className="relative z-0">
-      <input
-        type={type}
-        id={id}
-        name={id}
-        value={value}
-        onChange={onChange}
-        autoComplete={autoComplete}
-        required={required}
-        disabled={disabled}
-        // The `peer` class is key here. It lets the label react to the input's state.
-        className={`
-          block w-full appearance-none bg-transparent 
-          py-2.5 px-0 text-base text-gray-900 
-          border-0 border-b-2 border-gray-300 
-          focus:outline-none focus:ring-0 focus:border-primary
-          peer
-          ${disabled ? 'text-gray-500 cursor-not-allowed' : ''}
-        `}
-        placeholder=" " // The space is crucial for the floating label effect
-      />
-      <label
-        htmlFor={id}
-        className={`
-          absolute text-base text-gray-500 duration-300 transform 
-          -translate-y-6 scale-75 top-3 -z-10 origin-[0] 
-          peer-focus:text-primary 
-          peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 
-          peer-focus:scale-75 peer-focus:-translate-y-6
-          ${disabled ? 'text-gray-400' : ''}
-        `}
+    <div className={cn("relative", className)}>
+      <motion.div
+        className="absolute top-1/2 -translate-y-1/2 pointer-events-none text-foreground"
+        variants={containerVariants}
+        initial="initial"
+        animate={showLabel ? "animate" : "initial"}
       >
-        {label}
-      </label>
+        {label.split("").map((char, index) => (
+          <motion.span
+            key={index}
+            className="inline-block text-base" // Use text-base to match other inputs
+            variants={letterVariants}
+            style={{ willChange: "transform" }}
+          >
+            {char === " " ? "\u00A0" : char}
+          </motion.span>
+        ))}
+      </motion.div>
+
+      <input
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        value={value}
+        {...props}
+        className="outline-none border-b-2 border-input py-2 w-full text-base font-medium text-foreground bg-transparent placeholder-transparent focus:border-primary"
+      />
     </div>
   );
-}
+};

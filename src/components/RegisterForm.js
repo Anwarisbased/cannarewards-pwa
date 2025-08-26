@@ -1,5 +1,3 @@
-// src/components/RegisterForm.js
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,6 +7,7 @@ import { registerUser, loginUser } from '@/services/authService';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import zxcvbn from 'zxcvbn';
 import { showToast } from './CustomToast';
+import { motion, AnimatePresence } from 'framer-motion'; // --- 1. IMPORT MOTION & AnimatePresence ---
 
 // --- SHADCN IMPORTS ---
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import AnimatedProgressBar from './AnimatedProgressBar';
 import ImageWithLoader from './ImageWithLoader';
+// Not using the new input here yet to keep changes targeted.
+// import { FloatingLabelInput } from './FloatingLabelInput';
 
 export default function RegisterForm({ onSwitchToLogin, claimCode = null, rewardPreview = null }) {
   const [firstName, setFirstName] = useState('');
@@ -69,7 +70,7 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
         username: email, email: email, password: password,
         firstName: firstName, lastName: lastName, phone: phone,
         agreedToMarketing: agreedToMarketing,
-        agreedToTerms: agreedToTerms, // This is our age gate + terms
+        agreedToTerms: agreedToTerms,
       };
 
       const storedRefCode = localStorage.getItem('referralCode');
@@ -158,7 +159,30 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
                     className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-muted-foreground"
                     onClick={() => setPasswordVisible(!passwordVisible)}
                 >
-                    {passwordVisible ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                  {/* --- 2. IMPLEMENT THE ANIMATION --- */}
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    {passwordVisible ? (
+                      <motion.div
+                        key="eye-slash-reg"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <EyeSlashIcon className="h-5 w-5" />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="eye-open-reg"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <EyeIcon className="h-5 w-5" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
             </div>
             {password.length > 0 && (
@@ -176,7 +200,6 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
             <Input id="phone" type="tel" placeholder="(123) 456-7890" required value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" />
           </div>
 
-          {/* --- FIX: Combined Age Gate and Terms Checkbox --- */}
           <div className="items-top flex space-x-2">
             <input type="checkbox" id="terms" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="h-4 w-4 mt-1 rounded border-gray-300 text-primary focus:ring-primary" />
             <div className="grid gap-1.5 leading-none">

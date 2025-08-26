@@ -6,7 +6,16 @@ import { GiftIcon } from '@heroicons/react/24/solid';
 
 const modalVariants = {
     hidden: { opacity: 0, scale: 0.9 },
-    visible: { opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 300, damping: 25 } },
+    // --- MODIFIED: Replaced tween with spring animation ---
+    visible: { 
+        opacity: 1, 
+        scale: 1, 
+        transition: { 
+            type: 'spring', 
+            stiffness: 300, 
+            damping: 25 
+        } 
+    },
     exit: { opacity: 0, scale: 0.9 },
 };
 
