@@ -4,14 +4,12 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useModal } from '@/context/ModalContext';
-// --- 1. IMPORT THE SERVICE FUNCTIONS ---
 import { getWelcomeRewardPreview, getReferralGift, claimRewardCode } from '@/services/rewardsService';
 import RegisterForm from '@/components/RegisterForm';
 import ImageWithLoader from '@/components/ImageWithLoader';
 
 // Component specifically for referral signups (No changes needed here)
 function ReferralWelcome({ gift, onRegister }) {
-    // ... (JSX remains the same)
     return (
         <div className="text-center w-full max-w-sm px-4">
             <div className="mb-6">
@@ -43,7 +41,6 @@ function ReferralWelcome({ gift, onRegister }) {
 
 // Component for scan-first signups (No changes needed here)
 function UnauthenticatedWelcome({ reward, onRegister }) {
-    // ... (JSX remains the same)
     if (!reward) {
         return (
             <div className="w-full max-w-sm text-center animate-pulse">
@@ -91,42 +88,65 @@ function ClaimProcessor() {
     const code = searchParams.get('code');
     const refCode = searchParams.get('ref');
 
+    // --- START: REFACTORED LOGIC ---
     useEffect(() => {
+        // This effect runs once to decide the page's purpose based on URL params.
+        
+        // Persist the referral code if it exists, so it can be used after registration.
         if (refCode) {
             localStorage.setItem('referralCode', refCode);
         }
 
         if (authLoading) {
+            // Wait until we know the user's auth status.
             setStatus('authenticating');
             return;
         }
 
-        if (isAuthenticated) {
-            if (code) {
+        // --- Determine the action based on URL ---
+        
+        // Action 1: Handle a product scan code
+        if (code) {
+            if (isAuthenticated) {
                 setStatus('claiming');
                 claimForAuthenticatedUser(code);
-            }
-        } else {
-            if (code) {
+            } else {
                 setStatus('unauthenticated');
                 fetchRewardPreview();
-            } else if (refCode) {
+            }
+            return;
+        }
+
+        // Action 2: Handle a referral link
+        if (refCode) {
+            if (isAuthenticated) {
+                // A logged-in user can't be referred. Redirect them.
+                router.push('/');
+            } else {
                 setStatus('unauthenticated');
                 fetchReferralGift();
-            } else {
-                setStatus('error');
-                setErrorMessage('No claim code or referral code provided in the URL.');
             }
+            return;
         }
-    }, [code, refCode, authLoading, isAuthenticated]);
+        
+        // Action 3: No code or ref code provided.
+        // If the user is logged in, show the "Invalid Page" message.
+        // Otherwise, this is an invalid state, so show a generic error.
+        if (isAuthenticated) {
+            setStatus('invalid_authenticated');
+        } else {
+            setStatus('error');
+            setErrorMessage('No claim code or referral code was provided.');
+        }
+
+    }, [code, refCode, authLoading, isAuthenticated, router]);
+    // --- END: REFACTORED LOGIC ---
 
     const fetchRewardPreview = async () => {
         try {
-            // --- 2. USE THE SERVICE FUNCTION ---
             const data = await getWelcomeRewardPreview();
             setRewardPreview(data);
         } catch (err) {
-            console.error("Failed to fetch reward preview:", err);
             setStatus('error');
             setErrorMessage('This reward is not available. Please contact support.');
         }
@@ -134,42 +154,36 @@ function ClaimProcessor() {
 
     const fetchReferralGift = async () => {
         try {
-            // --- 2. USE THE SERVICE FUNCTION ---
             const data = await getReferralGift();
             setReferralGift(data);
         } catch (err) {
             console.error("Failed to fetch referral gift:", err);
+            // Don't show an error, just proceed without the gift preview.
         }
     };
 
     const claimForAuthenticatedUser = async (claimCode) => {
         try {
-            // --- 2. USE THE SERVICE FUNCTION ---
             const responseData = await claimRewardCode(claimCode);
-            
-            // Refreshes the user data in the AuthContext to get the new point total
-            await login(localStorage.getItem('authToken'), true);
+            await login(localStorage.getItem('authToken'), true); // Refresh user data
             setStatus('success');
             
             const bonusDetails = responseData.firstScanBonus;
-            
-            if (bonusDetails && bonusDetails.isEligible) {
+            if (bonusDetails?.isEligible) {
                 triggerConfetti();
                 router.push(`/catalog/${bonusDetails.rewardProductId}?first_scan=true`);
             } else {
                 router.push('/my-points');
             }
-
         } catch (err) {
             setStatus('error');
-            // --- 3. SIMPLER ERROR HANDLING ---
             setErrorMessage(err.message || 'Failed to claim this code.');
         }
     };
     
-    // (The rest of the component's JSX remains unchanged)
-    
-    if (isAuthenticated && !code && status !== 'claiming') {
+    // --- RENDER LOGIC ---
+
+    if (status === 'invalid_authenticated') {
         return (
             <div className="text-center p-8 bg-white rounded-lg shadow-md">
                 <h1 className="text-2xl font-bold mb-4 text-gray-800">Invalid Page</h1>
@@ -217,7 +231,8 @@ function ClaimProcessor() {
         );
     }
 
-    if (status === 'initializing' || status === 'authenticating' || status === 'claiming' || status === 'success') {
+    // Default loading/processing states
+    if (['initializing', 'authenticating', 'claiming', 'success'].includes(status)) {
         return (
             <div className="text-center p-8">
                 <h1 className="text-2xl font-bold mb-4">Processing...</h1>
