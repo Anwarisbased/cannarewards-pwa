@@ -4,6 +4,8 @@ import { Inter } from 'next/font/google';
 import { AuthProvider } from '../context/AuthContext';
 import { ModalProvider } from '../context/ModalContext';
 import { ThemeProvider } from '../context/ThemeContext';
+import { OnboardingProvider } from '../context/OnboardingContext';
+import FloatingOnboardingBanner from '../components/FloatingOnboardingBanner';
 import NavBar from '../components/NavBar';
 import Header from '../components/Header';
 import { Toaster } from 'react-hot-toast';
@@ -54,14 +56,17 @@ export default function RootLayout({ children }) {
       >
         <AuthProvider>
           <ThemeProvider>
-            <ModalProvider>
-              <Toaster />
-              <Header />
-              <main>
-                {children}
-              </main>
-              <NavBar />
-            </ModalProvider>
+            <OnboardingProvider>
+              <ModalProvider>
+                <Toaster />
+                <Header />
+                <main>
+                  {children}
+                </main>
+                <FloatingOnboardingBanner />
+                <NavBar />
+              </ModalProvider>
+            </OnboardingProvider>
           </ThemeProvider>
         </AuthProvider>
       </body>

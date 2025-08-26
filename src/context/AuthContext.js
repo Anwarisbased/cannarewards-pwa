@@ -1,8 +1,9 @@
 'use client';
 
-import { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react'; // Import useRef
 import api from '../utils/axiosConfig';
-import { getMyData } from '@/services/authService'; // --- 1. IMPORT THE SERVICE ---
+import { getMyData } from '@/services/authService';
+import { showAchievementToast } from '@/components/AchievementUnlockedToast'; // Import the toast helper
 
 const AuthContext = createContext();
 
@@ -10,21 +11,41 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const previousUnlockedAchievementsRef = useRef([]); // Use useRef to store previous achievements
 
   const fetchUserData = useCallback(async () => {
     try {
-      // --- 2. USE THE CLEAN SERVICE FUNCTION ---
       const userData = await getMyData();
-      setUser(userData);
+
+      // Compare achievements before updating user state
+      const currentUnlocked = userData.unlockedAchievementKeys || [];
+      const oldUnlocked = previousUnlockedAchievementsRef.current;
+
+      // Find newly unlocked achievements
+      const newlyUnlockedKeys = currentUnlocked.filter(key => !oldUnlocked.includes(key));
+
+      // Update the ref for the next comparison
+      previousUnlockedAchievementsRef.current = currentUnlocked;
+
+      setUser(userData); // Update user state
+
+      // If there are newly unlocked achievements, show toasts
+      if (newlyUnlockedKeys.length > 0 && userData.allAchievements) {
+        newlyUnlockedKeys.forEach(key => {
+          const unlockedAchievement = userData.allAchievements.find(ach => ach.achievement_key === key);
+          if (unlockedAchievement) {
+            showAchievementToast(unlockedAchievement);
+          }
+        });
+      }
+
     } catch (error) {
       console.error("AuthContext Error:", error.message);
-      // If fetching user data fails, the token is likely invalid.
-      // We must log out to clear the bad state.
       logout();
     } finally {
       setLoading(false);
     }
-  }, []); // useCallback with empty dependency array
+  }, []);
 
   useEffect(() => {
     const initializeAuth = () => {
@@ -45,9 +66,9 @@ export function AuthProvider({ children }) {
     setToken(newToken);
     api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     if (!silent) {
-      setLoading(true); // Show loading state on explicit login
+      setLoading(true);
     }
-    fetchUserData(); // Fetch user data with the new token
+    fetchUserData();
   };
 
   const logout = () => {
@@ -55,15 +76,14 @@ export function AuthProvider({ children }) {
     setToken(null);
     setUser(null);
     delete api.defaults.headers.common['Authorization'];
+    previousUnlockedAchievementsRef.current = []; // Clear achievements on logout
   };
   
-  // START: Added function for instant point updates
   const updateUserPoints = (newBalance) => {
     if (user) {
         setUser(prevUser => ({ ...prevUser, points: newBalance }));
     }
   };
-  // END: Added function
 
   const value = {
     user,
@@ -72,7 +92,7 @@ export function AuthProvider({ children }) {
     logout,
     isAuthenticated: !!user,
     loading,
-    updateUserPoints, // Expose the new function
+    updateUserPoints,
   };
 
   return (

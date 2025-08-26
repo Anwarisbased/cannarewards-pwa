@@ -4,10 +4,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '../context/AuthContext';
 import { usePathname } from 'next/navigation';
-import AnimatedCounter from './AnimatedCounter'; // We are importing the component we just created
+import AnimatedCounter from './AnimatedCounter';
+import { useTheme } from '@/context/ThemeContext'; // Import useTheme
 
 export default function Header() {
     const { user, isAuthenticated } = useAuth();
+    const { pointsName } = useTheme(); // Use theme context
     const pathname = usePathname();
 
     // A list of exact paths where the global header should NOT be displayed.
@@ -58,7 +60,7 @@ export default function Header() {
                         <span className="font-bold text-gray-700 text-sm">
                             <AnimatedCounter value={user?.points || 0} />
                         </span>
-                        <span className="text-xs text-gray-500">Points</span>
+                        <span className="text-xs text-gray-500">{pointsName}</span>
                     </Link>
                 </div>
             </div>

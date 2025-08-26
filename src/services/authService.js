@@ -45,3 +45,13 @@ export const updateUserProfile = async (profileData) => {
         throw new Error(error.response?.data?.message || 'Failed to update profile.');
     }
 };
+
+export const updateWishlist = async (productId) => {
+    const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v1`;
+    try {
+        const response = await api.post(`${API_BASE}/me/wishlist/update`, { productId });
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Failed to update wishlist.');
+    }
+};

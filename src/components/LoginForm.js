@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import { loginUser } from '@/services/authService';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { showToast } from './CustomToast';
+import { useTheme } from '@/context/ThemeContext'; // Import useTheme
+import { successHaptic, errorHaptic } from '@/utils/haptics'; // Import haptics
 
 // --- SHADCN IMPORTS ---
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,7 @@ export default function LoginForm({ onSwitchToRegister }) {
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const { login } = useAuth();
+  const { welcomeHeader } = useTheme(); // Use theme context
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -34,8 +37,10 @@ export default function LoginForm({ onSwitchToRegister }) {
     try {
       const data = await loginUser(email, password);
       login(data.token);
+      successHaptic(); // Haptic feedback on success
     } catch (err) {
       showToast('error', 'Login Failed', err.message);
+      errorHaptic(); // Haptic feedback on error
       setLoading(false);
     }
   };
@@ -45,7 +50,7 @@ export default function LoginForm({ onSwitchToRegister }) {
       <form onSubmit={handleSubmit}>
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>Welcome back! Please enter your credentials.</CardDescription>
+          <CardDescription>{welcomeHeader}</CardDescription> {/* Use welcomeHeader */}
         </CardHeader>
 
         <CardContent className="space-y-4">

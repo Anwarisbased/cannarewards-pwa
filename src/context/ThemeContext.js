@@ -8,6 +8,16 @@ const ThemeContext = createContext();
 export function ThemeProvider({ children }) {
     const { user, loading } = useAuth();
 
+    // Default values for brand personality settings
+    const defaultPersonality = {
+        pointsName: 'Points',
+        rankName: 'Rank',
+        welcomeHeader: 'Welcome to CannaRewards!',
+        scanCta: 'Scan Product',
+        dashboardLayout: 'default',
+        animationStyle: 'default',
+    };
+
     useEffect(() => {
         if (loading) return;
 
@@ -55,7 +65,18 @@ export function ThemeProvider({ children }) {
         }
     }, [user, loading]);
 
-    return <ThemeContext.Provider value={{}}>{children}</ThemeContext.Provider>;
+    // Combine default personality settings with user-specific overrides
+    const themeSettings = {
+        ...defaultPersonality,
+        pointsName: user?.settings?.theme?.pointsName || defaultPersonality.pointsName,
+        rankName: user?.settings?.theme?.rankName || defaultPersonality.rankName,
+        welcomeHeader: user?.settings?.theme?.welcomeHeader || defaultPersonality.welcomeHeader,
+        scanCta: user?.settings?.theme?.scanCta || defaultPersonality.scanCta,
+        dashboardLayout: user?.settings?.theme?.dashboardLayout || defaultPersonality.dashboardLayout,
+        animationStyle: user?.settings?.theme?.animationStyle || defaultPersonality.animationStyle,
+    };
+
+    return <ThemeContext.Provider value={themeSettings}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {
