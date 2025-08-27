@@ -40,7 +40,7 @@ export function OnboardingProvider({ children }) {
     ];
 
     const currentQuest = useMemo(() => {
-        const userStep = 2; // user?.onboardingQuestStep || 1;
+        const userStep = user?.onboardingQuestStep || 1;
         const quest = questLine.find(q => q.step === userStep) || questLine[questLine.length - 1];
         return quest;
     }, [user]);

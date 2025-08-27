@@ -83,6 +83,7 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!user,
     loading,
     updateUserPoints,
+    setUser // Exposing setUser for optimistic UI updates in later tasks
   };
 
   return (
