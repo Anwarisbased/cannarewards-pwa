@@ -4,9 +4,11 @@ import { Inter } from 'next/font/google';
 import { AuthProvider } from '../context/AuthContext';
 import { ModalProvider } from '../context/ModalContext';
 import { ThemeProvider } from '../context/ThemeContext';
+import { OnboardingProvider } from '../context/OnboardingContext'; // Import OnboardingProvider
 import NavBar from '../components/NavBar';
 import Header from '../components/Header';
 import AppEventHandler from '@/components/AppEventHandler';
+import FloatingOnboardingBanner from '@/components/FloatingOnboardingBanner'; // Import Banner
 import { Toaster } from 'react-hot-toast';
 import 'nprogress/nprogress.css';
 import './globals.css';
@@ -55,15 +57,18 @@ export default function RootLayout({ children }) {
       >
         <AuthProvider>
           <ThemeProvider>
-            <ModalProvider>
-              <AppEventHandler />
-              <Toaster />
-              <Header />
-              <main>
-                {children}
-              </main>
-              <NavBar />
-            </ModalProvider>
+            <OnboardingProvider> {/* Wrap ModalProvider */}
+              <ModalProvider>
+                <AppEventHandler />
+                <Toaster />
+                <Header />
+                <main>
+                  {children}
+                </main>
+                <FloatingOnboardingBanner /> {/* Add Banner Component */}
+                <NavBar />
+              </ModalProvider>
+            </OnboardingProvider>
           </ThemeProvider>
         </AuthProvider>
       </body>
