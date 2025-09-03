@@ -3,45 +3,64 @@
 import { useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useModal } from '@/context/ModalContext';
+import { useConfig } from '@/context/ConfigContext';
 
 /**
- * A global event handler component that listens for significant user state changes
- * and triggers corresponding UI events, like modals.
+ * A global, invisible event handler component that listens for significant
+ * user state changes from the AuthContext and triggers corresponding UI events,
+ * such as the Rank Up modal.
  */
 export default function AppEventHandler() {
   const { user } = useAuth();
   const { openRankUpModal } = useModal();
-  
-  // Use a ref to track the previous rank without causing re-renders.
+  const { allRanks, loading: configLoading } = useConfig();
+
+  // Use a ref to track the previous rank key without causing re-renders.
+  // We initialize it with the user's rank key when the component first mounts.
   const previousRankKey = useRef(user?.rank?.key);
 
   useEffect(() => {
-    // Ensure we have a user and all the necessary data to perform a check.
-    if (user && user.rank && user.allRanks && previousRankKey.current) {
-      const currentRankKey = user.rank.key;
-      const allRanks = user.allRanks;
+    const currentRankKey = user?.rank?.key;
 
-      // Check if the rank has actually changed since the last time we checked.
-      if (currentRankKey !== previousRankKey.current) {
-        const currentRankPoints = allRanks[currentRankKey]?.points ?? 0;
-        const previousRankPoints = allRanks[previousRankKey.current]?.points ?? 0;
+    // Do nothing until all necessary data is loaded.
+    if (
+      !user ||
+      !currentRankKey ||
+      configLoading ||
+      !allRanks ||
+      Object.keys(allRanks).length === 0
+    ) {
+      return;
+    }
 
-        // If the new rank has more points, it's a promotion!
-        if (currentRankPoints > previousRankPoints) {
+    // On the very first render after loading, previousRankKey.current might be undefined.
+    // We set it here to establish a baseline for the *next* render.
+    if (!previousRankKey.current) {
+      previousRankKey.current = currentRankKey;
+      return;
+    }
+
+    // This is the core logic: check if the rank has changed since the last render.
+    if (currentRankKey !== previousRankKey.current) {
+      const currentRankData = allRanks[currentRankKey];
+      const previousRankData = allRanks[previousRankKey.current];
+
+      // Ensure we have data for both ranks to prevent errors
+      if (currentRankData && previousRankData) {
+        // A promotion has occurred if the new rank requires more points than the old one.
+        if (currentRankData.points > previousRankData.points) {
           openRankUpModal({
-            fromRank: allRanks[previousRankKey.current],
-            toRank: allRanks[currentRankKey],
+            fromRank: previousRankData,
+            toRank: currentRankData,
           });
         }
       }
     }
 
-    // After the check, update the ref to the current rank for the next comparison.
-    if (user && user.rank) {
-      previousRankKey.current = user.rank.key;
-    }
-  }, [user, openRankUpModal]);
+    // After every check, update the ref to the current rank for the next comparison.
+    previousRankKey.current = currentRankKey;
+  }, [user, allRanks, openRankUpModal, configLoading]);
 
-  // This component renders nothing to the DOM.
+  // This component renders nothing to the DOM. Its only job is to handle effects.
   return null;
 }

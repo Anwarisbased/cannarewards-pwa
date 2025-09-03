@@ -4,11 +4,12 @@ import { Inter } from 'next/font/google';
 import { AuthProvider } from '../context/AuthContext';
 import { ModalProvider } from '../context/ModalContext';
 import { ThemeProvider } from '../context/ThemeContext';
-import { OnboardingProvider } from '../context/OnboardingContext'; // Import OnboardingProvider
+import { OnboardingProvider } from '../context/OnboardingContext';
+import { ConfigProvider } from '../context/ConfigContext';
 import NavBar from '../components/NavBar';
 import Header from '../components/Header';
 import AppEventHandler from '@/components/AppEventHandler';
-import FloatingOnboardingBanner from '@/components/FloatingOnboardingBanner'; // Import Banner
+import FloatingOnboardingBanner from '@/components/FloatingOnboardingBanner';
 import { Toaster } from 'react-hot-toast';
 import 'nprogress/nprogress.css';
 import './globals.css';
@@ -26,7 +27,7 @@ const nProgressStyle = `
 `;
 
 export default function RootLayout({ children }) {
-  const themeColor = '#2563eb'; // Default theme color
+  const themeColor = '#2563eb';
 
   return (
     <html lang="en">
@@ -35,7 +36,10 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="CannaRewards" />
-        <meta name="description" content="Scan products, earn points, and redeem exclusive rewards." />
+        <meta
+          name="description"
+          content="Scan products, earn points, and redeem exclusive rewards."
+        />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-config" content="/icons/browserconfig.xml" />
@@ -51,25 +55,25 @@ export default function RootLayout({ children }) {
         <link rel="shortcut icon" href="/favicon.ico" />
         <style>{nProgressStyle}</style>
       </head>
-      <body 
-        className={`${inter.className} bg-gray-50`} 
+      <body
+        className={`${inter.className} bg-gray-50`}
         suppressHydrationWarning={true}
       >
         <AuthProvider>
-          <ThemeProvider>
-            <OnboardingProvider> {/* Wrap ModalProvider */}
-              <ModalProvider>
-                <AppEventHandler />
-                <Toaster />
-                <Header />
-                <main>
-                  {children}
-                </main>
-                <FloatingOnboardingBanner /> {/* Add Banner Component */}
-                <NavBar />
-              </ModalProvider>
-            </OnboardingProvider>
-          </ThemeProvider>
+          <ConfigProvider>
+            <ThemeProvider>
+              <OnboardingProvider>
+                <ModalProvider>
+                  <AppEventHandler />
+                  <Toaster />
+                  <Header />
+                  <main>{children}</main>
+                  <FloatingOnboardingBanner />
+                  <NavBar />
+                </ModalProvider>
+              </OnboardingProvider>
+            </ThemeProvider>
+          </ConfigProvider>
         </AuthProvider>
       </body>
     </html>

@@ -2,123 +2,132 @@
 
 import React, { createContext, useState, useContext } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import WelcomeModal from '../components/WelcomeModal.js';
-import ConfettiBlast from '../components/ConfettiBlast.js';
+import WelcomeModal from '@/components/WelcomeModal';
+import ConfettiBlast from '@/components/ConfettiBlast';
 import EditProfileModal from '@/components/EditProfileModal';
 import ContentModal from '@/components/ContentModal';
 import ReportFailedScanModal from '@/components/ReportFailedScanModal';
-import RankUpModal from '@/components/RankUpModal'; // --- 1. IMPORT NEW MODAL ---
+import RankUpModal from '@/components/RankUpModal';
+import AchievementUnlockedModal from '@/components/AchievementUnlockedModal';
 import { Dialog } from '@/components/ui/dialog';
-import { useAuth } from './AuthContext.js';
+import { useAuth } from './AuthContext';
 
 const ModalContext = createContext();
 
 export function ModalProvider({ children }) {
-    const [welcomeBonusDetails, setWelcomeBonusDetails] = useState(null);
-    const [showConfetti, setShowConfetti] = useState(false);
-    const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
-    const [contentModalSlug, setContentModalSlug] = useState(null);
-    const [isReportScanOpen, setIsReportScanOpen] = useState(false);
-    const [failedScanCode, setFailedScanCode] = useState(null);
-    const [rankUpDetails, setRankUpDetails] = useState(null); // --- 2. ADD STATE FOR RANK UP ---
+  const [welcomeBonusDetails, setWelcomeBonusDetails] = useState(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [contentModalSlug, setContentModalSlug] = useState(null);
+  const [isReportScanOpen, setIsReportScanOpen] = useState(false);
+  const [failedScanCode, setFailedScanCode] = useState(null);
+  const [rankUpDetails, setRankUpDetails] = useState(null);
+  const [achievementDetails, setAchievementDetails] = useState(null);
 
-    const { login } = useAuth();
+  const { login } = useAuth();
 
-    const openEditProfileModal = () => setIsEditProfileOpen(true);
-    const closeEditProfileModal = () => setIsEditProfileOpen(false);
-    
-    const openContentModal = (slug) => setContentModalSlug(slug);
-    const closeContentModal = () => setContentModalSlug(null);
+  const openWelcomeModal = (details) => setWelcomeBonusDetails(details);
+  const closeWelcomeModal = () => setWelcomeBonusDetails(null);
 
-    const openReportScanModal = (code) => {
-        setFailedScanCode(code);
-        setIsReportScanOpen(true);
-    };
-    const closeReportScanModal = () => {
-        setIsReportScanOpen(false);
-        setFailedScanCode(null);
-    };
+  const openEditProfileModal = () => setIsEditProfileOpen(true);
+  const closeEditProfileModal = () => setIsEditProfileOpen(false);
 
-    // --- 3. ADD HANDLERS FOR RANK UP MODAL ---
-    const openRankUpModal = (details) => {
-        setRankUpDetails(details);
-    };
-    const closeRankUpModal = () => {
-        setRankUpDetails(null);
-    };
+  const openContentModal = (slug) => setContentModalSlug(slug);
+  const closeContentModal = () => setContentModalSlug(null);
 
-    const handleProfileUpdate = () => {
-        const currentToken = localStorage.getItem('authToken');
-        if (currentToken) {
-            login(currentToken, true); // silent login
-        }
-    };
+  const openReportScanModal = (code) => {
+    setFailedScanCode(code);
+    setIsReportScanOpen(true);
+  };
+  const closeReportScanModal = () => setIsReportScanOpen(false);
 
-    const openWelcomeModal = (bonusDetails) => {
-        setWelcomeBonusDetails(bonusDetails);
-    };
-    const closeWelcomeModal = () => {
-        setWelcomeBonusDetails(null);
-    };
+  const openRankUpModal = (details) => setRankUpDetails(details);
+  const closeRankUpModal = () => setRankUpDetails(null);
 
-    const triggerConfetti = () => {
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 4000); 
-    };
+  const openAchievementModal = (details) => setAchievementDetails(details);
+  const closeAchievementModal = () => setAchievementDetails(null);
 
-    const value = {
-        openWelcomeModal,
-        closeWelcomeModal,
-        triggerConfetti,
-        openEditProfileModal,
-        closeEditProfileModal,
-        openContentModal,
-        closeContentModal,
-        openReportScanModal,
-        openRankUpModal, // --- 4. EXPOSE THE NEW FUNCTION ---
-    };
+  const handleProfileUpdate = () => {
+    const currentToken = localStorage.getItem('authToken');
+    if (currentToken) {
+      login(currentToken, true);
+    }
+  };
 
-    return (
-        <ModalContext.Provider value={value}>
-            {children}
-            {showConfetti && <ConfettiBlast />}
-            <AnimatePresence>
-                {welcomeBonusDetails && (
-                    <WelcomeModal 
-                        bonusDetails={welcomeBonusDetails} 
-                        closeModal={closeWelcomeModal} 
-                    />
-                )}
-                {/* --- 5. RENDER THE RANK UP MODAL --- */}
-                {rankUpDetails && (
-                    <RankUpModal
-                        details={rankUpDetails}
-                        closeModal={closeRankUpModal}
-                    />
-                )}
-            </AnimatePresence>
+  const triggerConfetti = () => {
+    setShowConfetti(true);
+    setTimeout(() => setShowConfetti(false), 4000);
+  };
 
-            <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
-                {isEditProfileOpen && (
-                    <EditProfileModal 
-                        closeModal={closeEditProfileModal}
-                        onProfileUpdate={handleProfileUpdate}
-                    />
-                )}
-            </Dialog>
+  const value = {
+    triggerConfetti,
+    openWelcomeModal,
+    closeWelcomeModal,
+    openEditProfileModal,
+    closeEditProfileModal,
+    openContentModal,
+    closeContentModal,
+    openReportScanModal,
+    openRankUpModal,
+    openAchievementModal,
+    closeAchievementModal,
+  };
 
-            <Dialog open={!!contentModalSlug} onOpenChange={(isOpen) => !isOpen && closeContentModal()}>
-                {contentModalSlug && <ContentModal pageSlug={contentModalSlug} />}
-            </Dialog>
+  return (
+    <ModalContext.Provider value={value}>
+      {children}
+      {showConfetti && <ConfettiBlast />}
 
-            <Dialog open={isReportScanOpen} onOpenChange={setIsReportScanOpen}>
-                {isReportScanOpen && <ReportFailedScanModal failedCode={failedScanCode} closeModal={closeReportScanModal} />}
-            </Dialog>
+      <AnimatePresence>
+        {welcomeBonusDetails && (
+          <WelcomeModal
+            bonusDetails={welcomeBonusDetails}
+            closeModal={closeWelcomeModal}
+          />
+        )}
+        {rankUpDetails && (
+          <RankUpModal details={rankUpDetails} closeModal={closeRankUpModal} />
+        )}
+      </AnimatePresence>
 
-        </ModalContext.Provider>
-    );
+      {achievementDetails && (
+        <AchievementUnlockedModal
+          details={achievementDetails}
+          closeModal={closeAchievementModal}
+        />
+      )}
+
+      <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
+        {isEditProfileOpen && (
+          <EditProfileModal
+            closeModal={closeEditProfileModal}
+            onProfileUpdate={handleProfileUpdate}
+          />
+        )}
+      </Dialog>
+      <Dialog
+        open={!!contentModalSlug}
+        onOpenChange={(isOpen) => !isOpen && closeContentModal()}
+      >
+        {contentModalSlug && (
+          <ContentModal
+            pageSlug={contentModalSlug}
+            closeModal={closeContentModal}
+          />
+        )}
+      </Dialog>
+      <Dialog open={isReportScanOpen} onOpenChange={setIsReportScanOpen}>
+        {isReportScanOpen && (
+          <ReportFailedScanModal
+            failedCode={failedScanCode}
+            closeModal={closeReportScanModal}
+          />
+        )}
+      </Dialog>
+    </ModalContext.Provider>
+  );
 }
 
 export function useModal() {
-    return useContext(ModalContext);
+  return useContext(ModalContext);
 }

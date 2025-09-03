@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+---
 
-## Getting Started
+#### **File 2: `cannarewards-pwa/README.md` (Updated File)**
 
-First, run the development server:
+**ACTION:** Replace the entire contents of your existing `README.md` file in the **root** directory of your `cannarewards-pwa` project.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+**CONTENTS:**
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+````markdown
+# CannaRewards PWA
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## 🚀 Overview
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This is the Next.js Progressive Web App (PWA) frontend for the CannaRewards D2C Intelligence Platform. It is a fully decoupled, client-side application that communicates with the CannaRewards Engine backend via a REST API.
 
-## Learn More
+## 📋 Prerequisites
 
-To learn more about Next.js, take a look at the following resources:
+- Node.js >= 18
+- `npm` or `yarn`
+- A running instance of the `cannarewards-engine` backend.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## ⚙️ Local Development Setup
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1.  **Clone the repository:**
 
-## Deploy on Vercel
+    ```bash
+    git clone [your-repo-url] cannarewards-pwa
+    ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2.  **Install dependencies:**
+    Navigate into the project directory.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+    ```bash
+    cd cannarewards-pwa
+    npm install
+    ```
+
+3.  **Configure Environment Variables:**
+    Copy the example environment file to create your local configuration.
+
+    ```bash
+    cp .env.local.example .env.local
+    ```
+
+    Now, open `.env.local` and fill in the required values, particularly `NEXT_PUBLIC_API_URL`, which should point to your local WordPress backend (e.g., `http://cannarewards-api.local`).
+
+4.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
+    Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## 🏗️ Architecture
+
+This project follows a component-driven architecture, designed for rapid iteration and a high-quality user experience.
+
+- **`/app`**: The main routing structure, following the Next.js App Router convention.
+- **`/components`**: The UI library, organized by type:
+  - `/ui`: Raw, primitive components from shadcn/ui.
+  - `/`: Core, reusable components (`PageContainer`, `AnimatedCounter`).
+  - `/[feature]`: Complex feature components (`dashboard/StatusCard`).
+- **`/context`**: Global state management using React Context (`AuthContext`, `ConfigContext`).
+- **`/services`**: The data layer. All API calls to the backend are isolated in these files.
+- **Storybook:** A workbench for developing and testing UI components in isolation. Run with `npm run storybook`.
+
+## 🧪 Running Tests & Linters
+
+This project uses ESLint and Prettier to enforce code quality and style. This is run automatically on every commit via a Husky pre-commit hook.
+
+- To run tests: `npm test`
+- To run the linter: `npm run lint`
+````
