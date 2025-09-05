@@ -7,7 +7,7 @@ import { registerUser, loginUser } from '@/services/authService';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import zxcvbn from 'zxcvbn';
 import { showToast } from './CustomToast';
-import { motion, AnimatePresence } from 'framer-motion'; // --- 1. IMPORT MOTION & AnimatePresence ---
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- SHADCN IMPORTS ---
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import AnimatedProgressBar from './AnimatedProgressBar';
 import ImageWithLoader from './ImageWithLoader';
-// Not using the new input here yet to keep changes targeted.
-// import { FloatingLabelInput } from './FloatingLabelInput';
 
 export default function RegisterForm({ onSwitchToLogin, claimCode = null, rewardPreview = null }) {
   const [firstName, setFirstName] = useState('');
@@ -67,10 +65,10 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
 
     try {
       const registrationPayload = {
-        username: email, email: email, password: password,
-        firstName: firstName, lastName: lastName, phone: phone,
-        agreedToMarketing: agreedToMarketing,
-        agreedToTerms: agreedToTerms,
+        email, password,
+        firstName, lastName, phone,
+        agreedToMarketing,
+        agreedToTerms,
       };
 
       const storedRefCode = localStorage.getItem('referralCode');
@@ -82,22 +80,26 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
         registrationPayload.code = claimCode;
       }
       
+      // Step 1: Register the user using the new v2 service function.
       await registerUser(registrationPayload);
+
+      // Step 2: Automatically log the user in after successful registration.
+      const loginData = await loginUser(email, password);
+      login(loginData.token); // This will set the auth token and redirect to the dashboard.
 
       if (storedRefCode) {
           localStorage.removeItem('referralCode');
       }
 
-      const loginData = await loginUser(email, password);
-      login(loginData.token);
-
-      if (rewardPreview && rewardPreview.productId) {
-        let redirectUrl = `/catalog/${rewardPreview.productId}`;
+      // Handle special redirects for first-time scans or referral gifts.
+      if (rewardPreview?.id) {
+        let redirectUrl = `/catalog/${rewardPreview.id}`;
         if (rewardPreview.isReferralGift || claimCode) {
             redirectUrl += '?first_scan=true';
         }
         router.push(redirectUrl);
       } else {
+        // Default redirect is handled by the AuthContext, but we can be explicit.
         router.push('/');
       }
 
@@ -110,7 +112,7 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
   const { progress, barColor, textColor, label } = getStrengthIndicator();
 
   return (
-    <Card className="w-full max-w-sm text-left">
+    <Card className="w-full max-w-sm text-left border-none shadow-none bg-transparent">
       <form onSubmit={handleSubmit}>
         <CardHeader className="text-center">
           {rewardPreview && (
@@ -159,7 +161,6 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
                     className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-muted-foreground"
                     onClick={() => setPasswordVisible(!passwordVisible)}
                 >
-                  {/* --- 2. IMPLEMENT THE ANIMATION --- */}
                   <AnimatePresence mode="popLayout" initial={false}>
                     {passwordVisible ? (
                       <motion.div
@@ -196,8 +197,8 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
-            <Input id="phone" type="tel" placeholder="(123) 456-7890" required value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" />
+            <Label htmlFor="phone">Phone Number (Optional)</Label>
+            <Input id="phone" type="tel" placeholder="(123) 456-7890" value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" />
           </div>
 
           <div className="items-top flex space-x-2">
@@ -219,7 +220,7 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
 
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Creating Account...' : 'Sign Up & Claim Reward'}
+            {loading ? 'Creating Account...' : (rewardPreview ? 'Sign Up & Claim Reward' : 'Create Account')}
           </Button>
           
           {!(claimCode || rewardPreview?.isReferralGift) && (

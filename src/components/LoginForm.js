@@ -3,19 +3,18 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
-import { loginUser } from '@/services/authService';
+import { loginUser } from '@/services/authService'; // Correctly import the v2-compliant function
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { showToast } from './CustomToast';
 import { triggerHapticFeedback } from '@/utils/haptics';
-import { FloatingLabelInput } from './FloatingLabelInput';
-import { motion, AnimatePresence } from 'framer-motion'; // --- 1. IMPORT MOTION & AnimatePresence ---
+import { FloatingLabelInput } from './FloatingLabelInput'; // Using this for consistency
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- SHADCN IMPORTS ---
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-// --- END IMPORTS ---
 
 export default function LoginForm({ onSwitchToRegister }) {
   const [email, setEmail] = useState('');
@@ -28,17 +27,22 @@ export default function LoginForm({ onSwitchToRegister }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setLoading(true);
+    triggerHapticFeedback();
+
     try {
+      // Step 1: Call the updated loginUser service function.
       const data = await loginUser(email, password);
+      // Step 2: Pass the received token to the AuthContext.
+      // The AuthContext will handle state updates and redirection.
       login(data.token);
     } catch (err) {
       showToast('error', 'Login Failed', err.message);
-      setLoading(false);
+      setLoading(false); // Only set loading to false on failure.
     }
   };
 
   return (
-    <Card className="w-full max-w-sm text-left border-none shadow-none">
+    <Card className="w-full max-w-sm text-left border-none shadow-none bg-transparent">
       <form onSubmit={handleSubmit}>
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Login</CardTitle>
@@ -48,9 +52,9 @@ export default function LoginForm({ onSwitchToRegister }) {
         <CardContent className="space-y-8 pt-4">
           <FloatingLabelInput
             id="email-login"
-            label="Username or Email"
-            type="text"
-            autoComplete="username"
+            label="Email Address"
+            type="email"
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -78,7 +82,6 @@ export default function LoginForm({ onSwitchToRegister }) {
                 className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-muted-foreground"
                 onClick={() => setPasswordVisible(!passwordVisible)}
               >
-                {/* --- 2. IMPLEMENT THE ANIMATION --- */}
                 <AnimatePresence mode="popLayout" initial={false}>
                   {passwordVisible ? (
                     <motion.div
@@ -108,12 +111,12 @@ export default function LoginForm({ onSwitchToRegister }) {
         </CardContent>
 
         <CardFooter className="flex flex-col gap-4 pt-8">
-          <Button type="submit" className="w-full" disabled={loading} onClick={triggerHapticFeedback}>
+          <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'Logging in...' : 'Log In'}
           </Button>
           
           <p className="text-center text-sm text-muted-foreground">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <button
               type="button"
               onClick={onSwitchToRegister}
