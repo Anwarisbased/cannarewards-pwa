@@ -56,7 +56,8 @@ export default function Header() {
                 <div className="w-1/4 flex justify-end">
                     <Link href="/catalog" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors">
                         <span className="font-bold text-gray-700 text-sm">
-                            <AnimatedCounter value={user?.points || 0} />
+                            {/* --- FIX: Use the correct 'points_balance' key --- */}
+                            <AnimatedCounter value={user?.points_balance || 0} />
                         </span>
                         <span className="text-xs text-gray-500">Points</span>
                     </Link>

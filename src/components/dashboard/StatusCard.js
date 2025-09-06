@@ -41,7 +41,8 @@ export default function StatusCard({ user }) {
         <CardContent>
           <div className="text-center py-4">
             <span className="text-6xl font-bold text-primary tracking-tighter">
-              <AnimatedCounter value={user.points || 0} />
+              {/* --- FIX: Use the correct 'points_balance' key --- */}
+              <AnimatedCounter value={user.points_balance || 0} />
             </span>
             <p className="text-sm text-muted-foreground mt-1">Total Points</p>
           </div>

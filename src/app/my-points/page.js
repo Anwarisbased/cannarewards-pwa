@@ -8,6 +8,7 @@ import MyPointsSkeleton from '@/components/MyPointsSkeleton';
 import AnimatedProgressBar from '@/components/AnimatedProgressBar';
 import AnimatedCounter from '@/components/AnimatedCounter';
 import PageContainer from '@/components/PageContainer';
+import ReferralCard from '@/components/dashboard/ReferralCard';
 import { calculateRankProgress } from '@/utils/rankCalculations';
 import {
   Card,
@@ -25,20 +26,16 @@ import { getDashboardData } from '@/services/dashboardService';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function MyPointsPage() {
-  // Get data from our global contexts
   const { user, login, isAuthenticated, loading: authLoading } = useAuth();
   const { allRanks, settings, loading: configLoading } = useConfig();
   const router = useRouter();
 
-  // State for data specific to this page, fetched on demand
   const [dashboardData, setDashboardData] = useState(null);
   const [dashboardLoading, setDashboardLoading] = useState(true);
 
-  // State for rewards which will be loaded separately in a later slice
   const [rewards, setRewards] = useState([]);
   const [rewardsLoading, setRewardsLoading] = useState(true);
 
-  // Fetch dashboard data (like lifetime_points) when the user is authenticated
   useEffect(() => {
     if (isAuthenticated) {
       setDashboardLoading(true);
@@ -49,11 +46,9 @@ export default function MyPointsPage() {
     }
   }, [isAuthenticated]);
 
-  // Placeholder for fetching rewards data
   useEffect(() => {
     if (user) {
       setRewardsLoading(true);
-      // In a future slice, we'll replace this with a real API call
       setTimeout(() => {
         setRewardsLoading(false);
       }, 1500);
@@ -61,30 +56,23 @@ export default function MyPointsPage() {
   }, [user]);
 
   const handleRefresh = async () => {
-    // Create promises for all the data we need to refresh
     const sessionPromise = login(localStorage.getItem('authToken'), true);
     const dashboardPromise = getDashboardData();
-
-    // Wait for all refreshes to complete
     const [, dashboardResult] = await Promise.all([
       sessionPromise,
       dashboardPromise,
     ]);
-
     setDashboardData(dashboardResult);
   };
 
-  // Show skeleton if any of the essential data is loading
   if (authLoading || configLoading || dashboardLoading || !user) {
     return <MyPointsSkeleton />;
   }
-  // Redirect if user is not logged in
   if (!isAuthenticated) {
     router.push('/');
     return null;
   }
 
-  // Assemble the complete user object needed for our calculation utility
   const fullUserForCalc = {
     ...user,
     allRanks,
@@ -153,11 +141,18 @@ export default function MyPointsPage() {
           </Card>
         ) : (
           <Card className="mb-6 p-4 text-center">
+            {/* --- START FIX: Changed single quotes to curly braces and backticks --- */}
             <p className="font-bold text-primary">
-              🎉 You've reached the highest rank!
+              {`🎉 You've reached the highest rank!`}
             </p>
+            {/* --- END FIX --- */}
           </Card>
         )}
+        
+        {/* --- Add the new Referral Card component --- */}
+        <div className="mb-6">
+          <ReferralCard />
+        </div>
 
         {/* --- Rewards For You Section (Placeholder) --- */}
         <Card>

@@ -46,6 +46,29 @@ export const registerUser = async (registrationData) => {
 };
 
 /**
+ * --- START NEW FUNCTION ---
+ * Registers a user using a secure, single-use token obtained from an unauthenticated claim.
+ * @param {object} registrationData The user's registration details including the token.
+ * @returns {Promise<object>} The server response.
+ */
+export const registerUserWithToken = async (registrationData) => {
+  try {
+    const response = await api.post(
+      `${API_BASE_V2}/auth/register-with-token`,
+      registrationData
+    );
+    return response.data.data; // The v2 response is nested in a 'data' property
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || 'Token registration failed. Please try again.'
+    );
+  }
+};
+/**
+ * --- END NEW FUNCTION ---
+ */
+
+/**
  * Fetches the lightweight session data for an already authenticated user.
  * @returns {Promise<object>} The user session object.
  */

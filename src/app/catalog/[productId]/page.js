@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams, useParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useModal } from '@/context/ModalContext';
 import { getProductById } from '@/services/woocommerceService';
@@ -23,25 +23,19 @@ export default function ProductDetailPage() {
   const { triggerConfetti } = useModal();
   const router = useRouter();
   const params = useParams();
-  const searchParams = useSearchParams();
   const { productId } = params;
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isFirstScan, setIsFirstScan] = useState(false);
   const [showShippingModal, setShowShippingModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isRedeeming, setIsRedeeming] = useState(false);
 
   useEffect(() => {
-    setIsFirstScan(searchParams.get('first_scan') === 'true');
-  }, [searchParams]);
-
-  useEffect(() => {
-    if (isFirstScan) {
+    if (product?.is_eligible_for_free_claim) {
       triggerConfetti();
     }
-  }, [isFirstScan, triggerConfetti]);
+  }, [product, triggerConfetti]);
 
   useEffect(() => {
     if (productId) {
@@ -58,6 +52,8 @@ export default function ProductDetailPage() {
             images: productData.images,
             description: productData.description,
             points_cost: pointsMeta ? parseInt(pointsMeta.value, 10) : null,
+            // --- FIX: Store the new flag from the API ---
+            is_eligible_for_free_claim: productData.is_eligible_for_free_claim,
           };
           setProduct(formattedProduct);
         } catch (error) {
@@ -72,7 +68,8 @@ export default function ProductDetailPage() {
 
   const handleRedeem = () => {
     triggerHapticFeedback();
-    if (user && user.points_balance >= product.points_cost) {
+    // The canAfford check now handles all logic
+    if (canAfford) {
       setShowShippingModal(true);
     }
   };
@@ -83,7 +80,6 @@ export default function ProductDetailPage() {
     try {
       const result = await redeemRewardV2(product.id, shippingDetails);
 
-      // Optimistically update the UI and refresh the full session in the background
       updateUserPoints(result.new_points_balance);
       login(localStorage.getItem('authToken'), true);
 
@@ -95,11 +91,11 @@ export default function ProductDetailPage() {
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading || loading || !product) {
     return <ProductDetailSkeleton />;
   }
 
-  if (!product || !product.points_cost) {
+  if (!product.points_cost) {
     return (
       <div className="p-10 text-center">
         <h1 className="text-2xl font-bold">Reward Not Found</h1>
@@ -111,8 +107,11 @@ export default function ProductDetailPage() {
     );
   }
 
+  // --- FIX: Logic is now simpler and relies on the backend flag ---
   const canAfford =
-    user && product.points_cost && user.points_balance >= product.points_cost;
+    product.is_eligible_for_free_claim ||
+    (user && product.points_cost && user.points_balance >= product.points_cost);
+
   const pointsNeeded = product.points_cost
     ? product.points_cost - (user?.points_balance || 0)
     : 0;
@@ -140,7 +139,8 @@ export default function ProductDetailPage() {
               </CardContent>
             </Card>
 
-            {isFirstScan && (
+            {/* --- FIX: Banner is now controlled by the backend flag --- */}
+            {product.is_eligible_for_free_claim && (
               <div className="mb-4 border-l-4 border-yellow-400 bg-yellow-50 p-4 text-center">
                 <h2 className="text-xl font-bold text-yellow-800">
                   Congratulations!
@@ -166,7 +166,8 @@ export default function ProductDetailPage() {
             >
               {isRedeeming
                 ? 'Processing...'
-                : isFirstScan
+                // --- FIX: Button text now controlled by the backend flag ---
+                : product.is_eligible_for_free_claim
                   ? 'Claim Your Welcome Gift!'
                   : canAfford
                     ? `Redeem for ${product.points_cost.toLocaleString()} Points`

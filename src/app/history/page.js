@@ -33,9 +33,18 @@ export default function HistoryPage() {
     setLoading(true);
     try {
       const historyData = await getPointHistoryV2();
-      setHistory(historyData);
+      // --- START FIX ---
+      // Validate that the API response is an array before setting state.
+      if (Array.isArray(historyData)) {
+        setHistory(historyData);
+      } else {
+        console.warn('API did not return an array for history:', historyData);
+        setHistory([]); // Default to an empty array to prevent crashes.
+      }
+      // --- END FIX ---
     } catch (error) {
       console.error('Failed to fetch history:', error);
+      setHistory([]); // Also ensure state is an empty array on error.
     } finally {
       setLoading(false);
     }
@@ -74,7 +83,9 @@ export default function HistoryPage() {
                   </p>
                 </div>
                 <span
-                  className={`text-lg font-bold ${item.points >= 0 ? 'text-green-500' : 'text-red-500'}`}
+                  className={`text-lg font-bold ${
+                    item.points >= 0 ? 'text-green-500' : 'text-red-500'
+                  }`}
                 >
                   {item.points >= 0 ? `+${item.points}` : item.points}
                 </span>

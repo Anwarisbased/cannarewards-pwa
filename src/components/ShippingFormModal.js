@@ -69,6 +69,7 @@ const AddressForm = ({ details, handleChange }) => (
 
 
 export default function ShippingFormModal({ onSubmit, onCancel, currentUser }) {
+    // --- START FIX: Correctly access the shipping data from the user object ---
     const [details, setDetails] = useState({
         firstName: currentUser?.shipping?.shipping_first_name || currentUser?.firstName || '',
         lastName: currentUser?.shipping?.shipping_last_name || currentUser?.lastName || '',
@@ -77,6 +78,7 @@ export default function ShippingFormModal({ onSubmit, onCancel, currentUser }) {
         state: currentUser?.shipping?.shipping_state || '',
         zip: currentUser?.shipping?.shipping_postcode || ''
     });
+    // --- END FIX ---
 
     const isAddressComplete = details.address1 && details.city && details.state && details.zip;
     const [isEditing, setIsEditing] = useState(!isAddressComplete);
@@ -90,8 +92,6 @@ export default function ShippingFormModal({ onSubmit, onCancel, currentUser }) {
         onSubmit(details);
     };
     
-    // We wrap our modal content in a Dialog component with an open prop
-    // This allows the parent component to control its visibility without managing the Dialog state itself
     return (
         <Dialog open={true} onOpenChange={(isOpen) => !isOpen && onCancel()}>
             <DialogContent className="sm:max-w-xl">

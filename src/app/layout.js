@@ -32,6 +32,8 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
+        <title>CannaRewards</title>
+
         <meta name="application-name" content="CannaRewards" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -68,7 +70,9 @@ export default function RootLayout({ children }) {
                   <Toaster />
                   <Header />
                   <main>{children}</main>
-                  <FloatingOnboardingBanner />
+                  {/* --- START FIX: Comment out the banner --- */}
+                  {/* <FloatingOnboardingBanner /> */}
+                  {/* --- END FIX --- */}
                   <NavBar />
                 </ModalProvider>
               </OnboardingProvider>

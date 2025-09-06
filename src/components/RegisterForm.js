@@ -3,13 +3,16 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { registerUser, loginUser } from '@/services/authService';
+import {
+  registerUser,
+  loginUser,
+  registerUserWithToken, // Import the new function
+} from '@/services/authService';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import zxcvbn from 'zxcvbn';
 import { showToast } from './CustomToast';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- SHADCN IMPORTS ---
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +20,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import AnimatedProgressBar from './AnimatedProgressBar';
 import ImageWithLoader from './ImageWithLoader';
 
-export default function RegisterForm({ onSwitchToLogin, claimCode = null, rewardPreview = null }) {
+export default function RegisterForm({ onSwitchToLogin, registrationToken = null, rewardPreview = null }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -76,30 +79,37 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
           registrationPayload.referralCode = storedRefCode;
       }
       
-      if (claimCode) {
-        registrationPayload.code = claimCode;
+      // --- REFACTORED REGISTRATION LOGIC ---
+      let registrationResponse;
+      if (registrationToken) {
+        registrationPayload.registration_token = registrationToken;
+        registrationResponse = await registerUserWithToken(registrationPayload);
+      } else {
+        registrationResponse = await registerUser(registrationPayload);
       }
       
-      // Step 1: Register the user using the new v2 service function.
-      await registerUser(registrationPayload);
-
-      // Step 2: Automatically log the user in after successful registration.
-      const loginData = await loginUser(email, password);
-      login(loginData.token); // This will set the auth token and redirect to the dashboard.
+      // After any successful registration, log the user in with the returned token
+      if (registrationResponse.token) {
+        login(registrationResponse.token);
+      } else {
+        // Fallback to manual login if token isn't returned from registration
+        const loginData = await loginUser(email, password);
+        login(loginData.token);
+      }
+      // --- END REFACTORED LOGIC ---
 
       if (storedRefCode) {
           localStorage.removeItem('referralCode');
       }
 
-      // Handle special redirects for first-time scans or referral gifts.
       if (rewardPreview?.id) {
         let redirectUrl = `/catalog/${rewardPreview.id}`;
-        if (rewardPreview.isReferralGift || claimCode) {
+        // Add the flag for both referral and first-scan gifts
+        if (rewardPreview.isReferralGift || registrationToken) {
             redirectUrl += '?first_scan=true';
         }
         router.push(redirectUrl);
       } else {
-        // Default redirect is handled by the AuthContext, but we can be explicit.
         router.push('/');
       }
 
@@ -223,7 +233,7 @@ export default function RegisterForm({ onSwitchToLogin, claimCode = null, reward
             {loading ? 'Creating Account...' : (rewardPreview ? 'Sign Up & Claim Reward' : 'Create Account')}
           </Button>
           
-          {!(claimCode || rewardPreview?.isReferralGift) && (
+          {!(registrationToken || rewardPreview?.isReferralGift) && (
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{' '}
               <button type="button" onClick={onSwitchToLogin} className="font-medium text-primary hover:underline underline-offset-4" disabled={loading}>

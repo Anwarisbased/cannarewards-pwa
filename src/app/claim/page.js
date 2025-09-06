@@ -4,14 +4,16 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useModal } from '@/context/ModalContext';
-// --- 1. IMPORT THE SERVICE FUNCTIONS ---
-import { getWelcomeRewardPreview, getReferralGift, claimRewardCode } from '@/services/rewardsService';
+import {
+  getWelcomeRewardPreview,
+  claimCodeV2,
+  claimUnauthenticatedCode, // Import the new function
+} from '@/services/rewardsService';
+import { getReferralGift } from '@/services/referralService';
 import RegisterForm from '@/components/RegisterForm';
 import ImageWithLoader from '@/components/ImageWithLoader';
 
-// Component specifically for referral signups (No changes needed here)
 function ReferralWelcome({ gift, onRegister }) {
-    // ... (JSX remains the same)
     return (
         <div className="text-center w-full max-w-sm px-4">
             <div className="mb-6">
@@ -40,10 +42,7 @@ function ReferralWelcome({ gift, onRegister }) {
     );
 }
 
-
-// Component for scan-first signups (No changes needed here)
 function UnauthenticatedWelcome({ reward, onRegister }) {
-    // ... (JSX remains the same)
     if (!reward) {
         return (
             <div className="w-full max-w-sm text-center animate-pulse">
@@ -76,7 +75,6 @@ function UnauthenticatedWelcome({ reward, onRegister }) {
     );
 }
 
-
 function ClaimProcessor() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -87,7 +85,8 @@ function ClaimProcessor() {
     const [rewardPreview, setRewardPreview] = useState(null);
     const [referralGift, setReferralGift] = useState(null);
     const [errorMessage, setErrorMessage] = useState('');
-    
+    const [registrationToken, setRegistrationToken] = useState(null); // <-- NEW STATE
+
     const code = searchParams.get('code');
     const refCode = searchParams.get('ref');
 
@@ -107,9 +106,26 @@ function ClaimProcessor() {
                 claimForAuthenticatedUser(code);
             }
         } else {
+            // --- REFACTORED UNAUTHENTICATED FLOW ---
             if (code) {
-                setStatus('unauthenticated');
-                fetchRewardPreview();
+                setStatus('validating_code');
+                const handleUnauthenticatedClaim = async (claimCode) => {
+                    try {
+                        const response = await claimUnauthenticatedCode(claimCode);
+                        if (response.status === 'registration_required') {
+                            setRewardPreview(response.reward_preview);
+                            setRegistrationToken(response.registration_token);
+                            setStatus('unauthenticated');
+                        } else {
+                            setStatus('error');
+                            setErrorMessage('This code is not valid for a new user registration.');
+                        }
+                    } catch (err) {
+                        setStatus('error');
+                        setErrorMessage(err.message);
+                    }
+                };
+                handleUnauthenticatedClaim(code);
             } else if (refCode) {
                 setStatus('unauthenticated');
                 fetchReferralGift();
@@ -120,21 +136,8 @@ function ClaimProcessor() {
         }
     }, [code, refCode, authLoading, isAuthenticated]);
 
-    const fetchRewardPreview = async () => {
-        try {
-            // --- 2. USE THE SERVICE FUNCTION ---
-            const data = await getWelcomeRewardPreview();
-            setRewardPreview(data);
-        } catch (err) {
-            console.error("Failed to fetch reward preview:", err);
-            setStatus('error');
-            setErrorMessage('This reward is not available. Please contact support.');
-        }
-    };
-
     const fetchReferralGift = async () => {
         try {
-            // --- 2. USE THE SERVICE FUNCTION ---
             const data = await getReferralGift();
             setReferralGift(data);
         } catch (err) {
@@ -144,30 +147,22 @@ function ClaimProcessor() {
 
     const claimForAuthenticatedUser = async (claimCode) => {
         try {
-            // --- 2. USE THE SERVICE FUNCTION ---
-            const responseData = await claimRewardCode(claimCode);
-            
-            // Refreshes the user data in the AuthContext to get the new point total
+            const responseData = await claimCodeV2(claimCode);
             await login(localStorage.getItem('authToken'), true);
             setStatus('success');
             
-            const bonusDetails = responseData.firstScanBonus;
-            
-            if (bonusDetails && bonusDetails.isEligible) {
+            const firstScanEvent = responseData.triggered_events?.find(e => e.type === 'first_scan_bonus');
+            if (firstScanEvent) {
                 triggerConfetti();
-                router.push(`/catalog/${bonusDetails.rewardProductId}?first_scan=true`);
+                router.push(`/catalog/${firstScanEvent.details.rewardProductId}?first_scan=true`);
             } else {
                 router.push('/my-points');
             }
-
         } catch (err) {
             setStatus('error');
-            // --- 3. SIMPLER ERROR HANDLING ---
             setErrorMessage(err.message || 'Failed to claim this code.');
         }
     };
-    
-    // (The rest of the component's JSX remains unchanged)
     
     if (isAuthenticated && !code && status !== 'claiming') {
         return (
@@ -210,14 +205,14 @@ function ClaimProcessor() {
         return (
             <div className="w-full max-w-sm bg-white p-8 rounded-lg shadow-md">
                 <RegisterForm 
-                    claimCode={code} 
+                    registrationToken={registrationToken} // Pass the token
                     rewardPreview={referralGift || rewardPreview} 
                 />
             </div>
         );
     }
 
-    if (status === 'initializing' || status === 'authenticating' || status === 'claiming' || status === 'success') {
+    if (['initializing', 'authenticating', 'claiming', 'success', 'validating_code'].includes(status)) {
         return (
             <div className="text-center p-8">
                 <h1 className="text-2xl font-bold mb-4">Processing...</h1>

@@ -3,6 +3,18 @@ import api from '@/utils/axiosConfig';
 const API_BASE_V2 = `${process.env.NEXT_PUBLIC_API_URL}/wp-json/rewards/v2`;
 
 /**
+ * Fetches a preview of the referral gift for unauthenticated users.
+ */
+export const getReferralGift = async () => {
+  try {
+    const response = await api.get(`${API_BASE_V2}/unauthenticated/referral-gift-preview`);
+    return response.data;
+  } catch (error) {
+    throw new Error('Could not load the referral gift preview.');
+  }
+};
+
+/**
  * Fetches the list of users referred by the current user from the v2 endpoint.
  * @returns {Promise<Array>} A list of referral objects.
  */
